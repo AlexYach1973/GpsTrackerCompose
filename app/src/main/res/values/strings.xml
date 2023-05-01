@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">GpsTracker</string>
+
+<!--    BottomItem-->
+    <string name="gps_screen">track</string>
+    <string name="list_screen">list</string>
+    <string name="settings_screen">tools</string>
+
+<!--    Setting Screen-->
+    <string name="update_time">Update Time</string>
+
+</resources>
