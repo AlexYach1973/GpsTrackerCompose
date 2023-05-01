@@ -3,9 +3,6 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,12 +15,10 @@ import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.alexyach.compose.gpstracker.Manifest
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.databinding.MapBinding
 import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
-import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
@@ -34,12 +29,12 @@ fun GpsScreen(
 ) {
     val context = LocalContext.current
 
-    /** Permission */
+    /** Permission *//*
     val permission = arrayOf(
         android.Manifest.permission.ACCESS_FINE_LOCATION,
         android.Manifest.permission.ACCESS_COARSE_LOCATION
-    )
-    val pLauncher = rememberLauncherForActivityResult(
+    )*/
+    /*val pLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissionMap ->
         val areGranted = permissionMap.values.reduce { acc, next -> acc && next }
@@ -51,17 +46,17 @@ fun GpsScreen(
             // SHOW Dialog
         }
 
-    }
-    checkAndRequestLocationPermission(
+    }*/
+/*    checkAndRequestLocationPermission(
         context = context,
         permissions = permission,
         launcher = pLauncher
-    )
+    )*/
     /** *** */
 
     settingOsm(context)
     MapViewXML(context)
-//    IniOsm(context)
+    IniOsm(context)
 
     Box(
         modifier = Modifier
@@ -183,8 +178,4 @@ fun checkAndRequestLocationPermission(
         // Request permissions
         launcher.launch(permissions)
     }
-}
-
-fun test() {
-
 }
