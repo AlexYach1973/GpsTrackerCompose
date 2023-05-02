@@ -1,8 +1,6 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -12,7 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.alexyach.compose.gpstracker.R
@@ -28,34 +25,11 @@ fun GpsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-
-    /** Permission *//*
-    val permission = arrayOf(
-        android.Manifest.permission.ACCESS_FINE_LOCATION,
-        android.Manifest.permission.ACCESS_COARSE_LOCATION
-    )*/
-    /*val pLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissionMap ->
-        val areGranted = permissionMap.values.reduce { acc, next -> acc && next }
-        if (areGranted) {
-            // USE
-            IniOsm(context = context)
-
-        } else {
-            // SHOW Dialog
-        }
-
-    }*/
-/*    checkAndRequestLocationPermission(
-        context = context,
-        permissions = permission,
-        launcher = pLauncher
-    )*/
-    /** *** */
-
+    // Конфигурации для карт
     settingOsm(context)
+    // Привязываемся к XML
     MapViewXML(context)
+    // Работа с самой картой
     IniOsm(context)
 
     Box(
@@ -90,9 +64,6 @@ fun MapViewXML(
     ) { mapView ->
         onLoad?.invoke(mapView)
     }
-
-//    IniOsm(context = context)
-
 }
 
 /**  MapLifecycle */
@@ -131,7 +102,6 @@ fun rememberMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
         }
     }
 
-/** Binding */
 @Composable
 fun IniOsm(context: Context) {
     AndroidViewBinding(MapBinding::inflate) {
@@ -161,21 +131,8 @@ fun IniOsm(context: Context) {
         ))*/
 
     }
+
 }
 
-/** Permission */
-fun checkAndRequestLocationPermission(
-    context: Context,
-    permissions: Array<String>,
-    launcher: ManagedActivityResultLauncher<Array<String>, Map<String, Boolean>>
-) {
-    if (permissions.all {
-            ContextCompat.checkSelfPermission(context, it) ==
-                    PackageManager.PERMISSION_GRANTED
-        }) {
-        // Use location because permissions are already granted
-    } else {
-        // Request permissions
-        launcher.launch(permissions)
-    }
-}
+
+
