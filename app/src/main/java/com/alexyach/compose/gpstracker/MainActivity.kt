@@ -1,11 +1,14 @@
 package com.alexyach.compose.gpstracker
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -20,6 +23,9 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,6 +45,10 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 
 class MainActivity : ComponentActivity() {
+
+    /** Service */
+//    lateinit var locationService: LocationService
+//    var isBound by mutableStateOf(false)
 
     /** Permission */
     // VERSION_CODES.Q - Android 10 (API 29)
@@ -194,7 +204,21 @@ class MainActivity : ComponentActivity() {
 //        Log.d(TAG, "MainActivity, onDestroy()")
     }
 
+
+    /** Service *//*
+    val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as LocationService.LocationServiceBinder
+            locationService = binder.getService()
+            isBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            isBound = false
+        }
+    }*/
 }
+
 
 
 

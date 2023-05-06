@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
@@ -34,8 +35,10 @@ class LocationService : Service() {
     private lateinit var locProvider: FusedLocationProviderClient
     private lateinit var locRequest: LocationRequest
 
+    private val binder = LocationServiceBinder()
+
     override fun onBind(intent: Intent?): IBinder? {
-        return null
+        return binder
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -112,7 +115,7 @@ class LocationService : Service() {
 
             if (lastLocation != null && currentLocation != null) {
                 // Исправляем погрешность GPS
-                if (currentLocation.speed > 0.2) {
+//                if (currentLocation.speed > 0.2) {
                     distance += lastLocation?.distanceTo(currentLocation)!!
                     geoPointsList.add(
                         GeoPoint(
@@ -120,7 +123,7 @@ class LocationService : Service() {
                             currentLocation.longitude
                         )
                     )
-                }
+//                }
                 val localModel = LocationModel(
                     currentLocation.speed,
                     distance,
@@ -132,7 +135,7 @@ class LocationService : Service() {
             }
             lastLocation = currentLocation
 
-            Log.d(TAG, "LocationService, Distance: ${distance}")
+//            Log.d(TAG, "LocationService, Distance: ${distance}")
         }
     }
 
@@ -167,6 +170,11 @@ class LocationService : Service() {
         const val CHANNEL_ID = "channel_1"
         var isRunning = false
         var startTime = 0L
+    }
+
+    inner class LocationServiceBinder : Binder() {
+        fun getService(): LocationService =
+            this@LocationService
     }
 
 }

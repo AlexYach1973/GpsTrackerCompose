@@ -10,6 +10,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
@@ -24,12 +25,18 @@ class GpsScreenViewModel : ViewModel() {
 
 //    var updateTime by mutableStateOf("00:00:00")
 
+    var locationUpdate by mutableStateOf<LocationModel>(
+        LocationModel(
+        geoPointsList = ArrayList()
+    )
+    )
+
     /** mutableStateOf плохо обновляется в фоновом потоке (внутри run()),
      * поэтому наблюдаем MutableLiveData и в @Compose пишем .observeAsState()  */
     val updateTimeLiveData = MutableLiveData("00:00:00:00")
 
 
-    var timer: Timer? = null
+    private var timer: Timer? = null
     private var startTime = 0L
 
     init {
@@ -40,7 +47,6 @@ class GpsScreenViewModel : ViewModel() {
     }
 
     fun startTimer() {
-
             timer?.cancel()
             timer = Timer()
             startTime = LocationService.startTime
@@ -53,7 +59,6 @@ class GpsScreenViewModel : ViewModel() {
 //                Log.d(TAG, "GpsScreenViewModel, run() Thread ${Thread.currentThread().name}")
                 }
             }, 1, 1)
-
     }
 
     private fun getCurrentTime(): String {

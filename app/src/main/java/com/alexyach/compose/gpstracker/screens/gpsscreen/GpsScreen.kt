@@ -1,8 +1,13 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.os.Build
+import android.os.IBinder
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +43,10 @@ import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
+import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
@@ -56,8 +64,28 @@ import java.util.TimerTask
 fun GpsScreen(
     modifier: Modifier = Modifier
 ) {
+
+    /** Srvice */
+//    lateinit var locationService: LocationService
+//    var isBound by mutableStateOf(false)
+
     val context = LocalContext.current
     val gpsViewModel: GpsScreenViewModel = viewModel()
+
+    /** LocalBroadcastReceiver */
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == LocationService.LOC_MODEL_INTENT) {
+                val locModel = intent.getSerializableExtra(
+                    LocationService.LOC_MODEL_INTENT) as LocationModel
+
+                gpsViewModel.locationUpdate = locModel
+            }
+        }
+    }
+    val locFilter = IntentFilter(LocationService.LOC_MODEL_INTENT)
+    LocalBroadcastManager.getInstance(context).registerReceiver(receiver,locFilter)
+    /** *** */
 
     // Конфигурации для карт
     settingOsm(context)
@@ -83,7 +111,6 @@ fun GpsScreen(
             )
             ColumnTwoFab(gpsViewModel)
         }
-
 
     }
 }
@@ -122,6 +149,8 @@ private fun ColumnTextValue(
     viewModel: GpsScreenViewModel
 ) {
     val state = viewModel.updateTimeLiveData.observeAsState()
+    val distance = "${String.format("%.1f",viewModel.locationUpdate.distance)} м"
+    val velocity = "${String.format("%.1f",viewModel.locationUpdate.velocity * 3.6)} км/ч"
 
     Column(
         modifier = Modifier
@@ -136,7 +165,7 @@ private fun ColumnTextValue(
             fontSize = 18.sp
         )
         Text(
-            text = " ??? км/ч",
+            text = velocity,
             fontSize = 18.sp
         )
         Text(
@@ -144,7 +173,7 @@ private fun ColumnTextValue(
             fontSize = 18.sp
         )
         Text(
-            text = "??? м",
+            text = distance,
             fontSize = 28.sp
         )
     }
@@ -160,15 +189,6 @@ private fun ColumnTwoFab(
 
     // Проверка, запущен ли сервис в фоне
     isServiceRunning = LocationService.isRunning
-
-    // Если запущен - продолжить отсчет времени
-//    gpsViewModel.continueTimer()
-//    if (isServiceRunning) {
-//        gpsViewModel.startTimer()
-//    } else {
-//        gpsViewModel.stopTimer()
-//    }
-//    Log.d(TAG,"ColumnTwoFab, isServiceRunning= $isServiceRunning")
 
     Column(
         modifier = Modifier
@@ -346,8 +366,42 @@ fun IniOsm(context: Context) {
 
     }
 }
-
 /** END Работа с картой  */
+
+
+/** LocalBroadcastReceiver *//*
+val receiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context?, intent: Intent?) {
+        if (intent?.action == LocationService.LOC_MODEL_INTENT) {
+            val locModel = intent.getSerializableExtra(
+                LocationService.LOC_MODEL_INTENT) as LocationModel
+
+            gpsV
+
+            Log.d(TAG, "GpsScreen, L= ${locModel.distance}, " +
+                    "v = ${locModel.velocity} km/h")
+        }
+    }
+}*/
+/*@Composable
+fun RegisterLocReceiver(gpsViewModel: GpsScreenViewModel) {
+    val context = LocalContext.current
+    val locFilter = IntentFilter(LocationService.LOC_MODEL_INTENT)
+    LocalBroadcastManager.getInstance(context).registerReceiver(receiver,locFilter)
+}*/
+
+/** Service */
+/*val connection = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        val binder = service as LocationService.LocationServiceBinder
+        locationService = binder.getService()
+        isBound = true
+    }
+
+    override fun onServiceDisconnected(name: ComponentName?) {
+        isBound = false
+    }
+}*/
 
 
 @Preview(showBackground = true)
