@@ -1,4 +1,4 @@
-package com.alexyach.compose.gpstracker.data
+package com.alexyach.compose.gpstracker.data.preferences
 
 import android.util.Log
 import androidx.datastore.core.DataStore

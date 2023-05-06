@@ -1,4 +1,4 @@
-package com.alexyach.compose.gpstracker.screens
+package com.alexyach.compose.gpstracker.screens.gpslist
 
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable

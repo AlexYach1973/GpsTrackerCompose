@@ -1,11 +1,13 @@
 package com.alexyach.compose.gpstracker
 
+import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,17 +20,19 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.alexyach.compose.gpstracker.data.location.LocationService
+import com.alexyach.compose.gpstracker.screens.MainScreen
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.utils.GpsEnableDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -40,16 +44,16 @@ class MainActivity : ComponentActivity() {
     // VERSION_CODES.Q - Android 10 (API 29)
     private val permissionsRequired =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        listOf(
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            listOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
 //            android.Manifest.permission.ACCESS_COARSE_LOCATION,
-            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
-        )
-    } else {
-        listOf(
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        )
-    }
+                android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            )
+        } else {
+            listOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        }
 
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +61,8 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             GpsTrackerTheme {
+                val context = LocalContext.current
+
                 // A surface container using the 'background' color from the theme
                 val permissionState =
                     rememberMultiplePermissionsState(permissions = permissionsRequired)
@@ -68,17 +74,19 @@ class MainActivity : ComponentActivity() {
 
                     /** Проверяем разрешения */
                     if (permissionState.allPermissionsGranted) {
+                        /** Если все в порядке */
                         /** Проверяем GPS */
                         CheckLocationEnabled()
 
                         /** Запускаем экран */
                         MainScreen()
+//                        Log.d(TAG, "MainActivity, 82 строка")
+
                         Toast.makeText(
                             this@MainActivity,
                             "All Permissions Granted",
                             Toast.LENGTH_SHORT
                         ).show()
-
                     } else {
                         /** Запрашиваем разрешения */
                         Column(
@@ -157,25 +165,37 @@ class MainActivity : ComponentActivity() {
         val isEnabled = lManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
 
         if (!isEnabled) {
-//            val openDialog = remember { mutableStateOf(false) }
             GpsEnableDialog(
                 true
             ) {
-                // К настройкам включения GPS
-                startActivity(
-                    Intent(
-                        Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                if (it) {
+                    // К настройкам включения GPS
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                        )
                     )
-                )
 //                    Toast.makeText(this, "Gps Click", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        this,
+                        resources.getText(R.string.dismiss_gps),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         } else {
             Toast.makeText(this, "Gps Enabled", Toast.LENGTH_SHORT).show()
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+//        Log.d(TAG, "MainActivity, onDestroy()")
+    }
 
 }
+
 
 
 @Preview(showBackground = true)

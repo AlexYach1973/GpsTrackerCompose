@@ -11,7 +11,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.alexyach.compose.gpstracker.GpsTrackerApplication
-import com.alexyach.compose.gpstracker.data.UserPreferencesRepository
+import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map

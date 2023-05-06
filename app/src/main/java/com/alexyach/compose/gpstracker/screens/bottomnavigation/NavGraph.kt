@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.alexyach.compose.gpstracker.screens.GpsList
+import com.alexyach.compose.gpstracker.screens.gpslist.GpsList
 import com.alexyach.compose.gpstracker.screens.gpsscreen.GpsScreen
 import com.alexyach.compose.gpstracker.screens.gpssettings.GpsSettings
 

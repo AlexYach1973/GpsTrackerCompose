@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.alexyach.compose.gpstracker.ui.theme.Pink80
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
@@ -36,23 +37,33 @@ fun BottomNavigationScreen(
         val currentRoute = backStackEntry?.destination?.route
 
         // Рисуем меню
-        listBottomItem.forEach {bottomItem ->
+        listBottomItem.forEach { bottomItem ->
             BottomNavigationItem(
                 selected = currentRoute == bottomItem.route,
                 onClick = {
-                          navController.navigate(bottomItem.route)
+                    navController.navigate(bottomItem.route) {
+                        // Избежать несклько копий при повторном нажатии
+                        launchSingleTop = true
+                        // Восстанавливаем состояние при повторном выборе элемента
+                        restoreState = true
+                        // При BackStack возврат на главный экран
+                        popUpTo(navController.graph.findStartDestination().id)
+
+                    }
+
                 },
                 icon = {
                     Icon(
                         painter = painterResource(bottomItem.iconId),
-                        contentDescription = bottomItem.route)
+                        contentDescription = bottomItem.route
+                    )
                 },
                 label = {
 //                    if (currentRoute== bottomItem.route) {
-                        Text(
-                            text = stringResource(bottomItem.title),
-                            fontSize = 12.sp
-                        )
+                    Text(
+                        text = stringResource(bottomItem.title),
+                        fontSize = 12.sp
+                    )
 //                    }
 
                 },

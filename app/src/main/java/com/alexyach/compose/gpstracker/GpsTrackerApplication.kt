@@ -5,7 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import com.alexyach.compose.gpstracker.data.UserPreferencesRepository
+import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 
 // DataStore
 private const val PREFERENCES_NAME = "preferencesName"

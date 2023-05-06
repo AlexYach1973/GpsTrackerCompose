@@ -82,11 +82,22 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.10'
     implementation 'com.github.MKergall:osmbonuspack:6.7.0'
 
+    // Подписка на местонахождение
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+
+
     // ViewBinding Compose
     implementation 'androidx.compose.ui:ui-viewbinding'
 
     // Permission
     implementation "com.google.accompanist:accompanist-permissions:0.25.1"
+
+    // Наблюдать LiveData
+    // https://maven.google.com/web/index.html?q=livedata#androidx.compose.runtime:runtime-livedata
+    implementation "androidx.compose.runtime:runtime-livedata:1.4.3"
+
+    // Local Broadcast
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
 
 
     testImplementation 'junit:junit:4.13.2'

@@ -2,22 +2,29 @@
     <string name="app_name">GpsTracker</string>
 
 <!--    BottomItem-->
-    <string name="gps_screen">track</string>
-    <string name="list_screen">list</string>
-    <string name="settings_screen">tools</string>
+    <string name="gps_screen">шлях</string>
+    <string name="list_screen">база</string>
+    <string name="settings_screen">параметри</string>
 
-<!--    MainActivity-->
-    <string name="enable_permission">Разрешить использование локации</string>
-    <string name="setting_permission_1">Если не получилось, зайдите в </string>
-    <string name="setting_permission_2"> настройки</string>
+<!--    MainActivity Permission -->
+    <string name="enable_permission">Дозволити використання локації</string>
+    <string name="setting_permission_1">Якщо не вдалося, зайдіть </string>
+    <string name="setting_permission_2"> налаштування</string>
+
+    <!--    MainActivity Text-->
+    <string name="time">Час:</string>
+    <string name="velosity">Швидкість:</string>
+    <string name="avr_velocity">Середня шв.:</string>
+    <string name="distance">Шлях:</string>
 
 <!--    AlertDialog-->
-    <string name="title_dialog">GPS отключен</string>
-    <string name="text_dialog">Хотите включить GPS</string>
-    <string name="ok_dialog">Да</string>
-    <string name="no_dialog">Нет</string>
+    <string name="title_dialog">GPS вимкненний</string>
+    <string name="text_dialog">Хотите включитьБажаєте увімкнути GPS?</string>
+    <string name="ok_dialog">Так</string>
+    <string name="no_dialog">Ні</string>
+    <string name="dismiss_gps">Без GPS працювати не буде</string>
 
 <!--    Setting Screen-->
-    <string name="update_time">Update Time</string>
+    <string name="update_time">Час оновлення</string>
 
 </resources>

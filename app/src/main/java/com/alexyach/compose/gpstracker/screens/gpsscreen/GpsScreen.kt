@@ -1,30 +1,64 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.FloatingActionButtonDefaults
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alexyach.compose.gpstracker.R
+import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
+import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
+import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.util.Timer
+import java.util.TimerTask
 
 @Composable
 fun GpsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val gpsViewModel: GpsScreenViewModel = viewModel()
+
     // Конфигурации для карт
     settingOsm(context)
     // Привязываемся к XML
@@ -32,14 +66,194 @@ fun GpsScreen(
     // Работа с самой картой
     IniOsm(context)
 
+
     Box(
         modifier = Modifier
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+        ) {
+            ColumnTextTitle()
+            ColumnTextValue(gpsViewModel)
+            Spacer(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color.Cyan)
+            )
+            ColumnTwoFab(gpsViewModel)
+        }
 
 
     }
 }
 
+@Composable
+private fun ColumnTextTitle() {
+    Column(
+        modifier = Modifier
+//            .background(Color.Red)
+            .padding(4.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+
+    ) {
+
+        Text(
+            text = stringResource(id = R.string.time),
+            fontSize = 18.sp
+        )
+        Text(
+            text = stringResource(id = R.string.velosity),
+            fontSize = 18.sp
+        )
+        Text(
+            text = stringResource(id = R.string.avr_velocity),
+            fontSize = 18.sp
+        )
+        Text(
+            text = stringResource(id = R.string.distance),
+            fontSize = 28.sp
+        )
+    }
+}
+
+@Composable
+private fun ColumnTextValue(
+    viewModel: GpsScreenViewModel
+) {
+    val state = viewModel.updateTimeLiveData.observeAsState()
+
+    Column(
+        modifier = Modifier
+//            .background(Color.Blue)
+            .padding(4.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+
+    ) {
+
+        Text(
+            text = state.value.toString(),
+            fontSize = 18.sp
+        )
+        Text(
+            text = " ??? км/ч",
+            fontSize = 18.sp
+        )
+        Text(
+            text = "??? км/ч",
+            fontSize = 18.sp
+        )
+        Text(
+            text = "??? м",
+            fontSize = 28.sp
+        )
+    }
+}
+
+
+@Composable
+private fun ColumnTwoFab(
+    gpsViewModel: GpsScreenViewModel
+) {
+    val context = LocalContext.current
+    var isServiceRunning by remember { mutableStateOf(false) }
+
+    // Проверка, запущен ли сервис в фоне
+    isServiceRunning = LocationService.isRunning
+
+    // Если запущен - продолжить отсчет времени
+//    gpsViewModel.continueTimer()
+//    if (isServiceRunning) {
+//        gpsViewModel.startTimer()
+//    } else {
+//        gpsViewModel.stopTimer()
+//    }
+//    Log.d(TAG,"ColumnTwoFab, isServiceRunning= $isServiceRunning")
+
+    Column(
+        modifier = Modifier
+//            .background(Color.Blue)
+            .padding(4.dp),
+    ) {
+        FloatingActionButton(
+            onClick = {
+
+            },
+            modifier = Modifier.padding(bottom = 4.dp),
+            backgroundColor = Transparent100,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+        ) {
+            Icon(
+                painterResource(id = R.drawable.ic_my_location),
+                contentDescription = null,
+                modifier = Modifier.size(46.dp)
+//                    .border(width = 1.dp, color = Color.Black, shape = CircleShape)
+            )
+
+        }
+
+        FloatingActionButton(
+            onClick = {
+                isServiceRunning = !isServiceRunning
+
+                /** Запускаем Service */
+                startStopService(
+                    context,
+                    isServiceRunning,
+                    gpsViewModel
+                )
+
+            },
+            modifier = Modifier,
+            backgroundColor = Transparent100,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+        ) {
+            Icon(
+                painterResource(
+                    id = if (!isServiceRunning) {
+                        R.drawable.ic_play
+                    } else {
+                        R.drawable.ic_stop
+                    }
+                ),
+                contentDescription = null,
+                modifier = Modifier.size(46.dp)
+//                    .border(width = 1.dp, color = Color.Black)
+            )
+
+        }
+    }
+}
+
+/** Service */
+private fun startStopService(
+    context: Context,
+    isServiceRunning: Boolean,
+    viewModel: GpsScreenViewModel
+) {
+    if (isServiceRunning) {
+        startLockService(context)
+
+        // Записать начальное время в Сервис, чтоб не обнулялся при выходе из App
+        LocationService.startTime = System.currentTimeMillis()
+        viewModel.startTimer()
+    } else {
+        context.stopService(Intent(context, LocationService::class.java))
+        viewModel.stopTimer()
+    }
+}
+
+private fun startLockService(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        context.startForegroundService(Intent(context, LocationService::class.java))
+    } else {
+        context.startService(Intent(context, LocationService::class.java))
+    }
+}
+/** End Service */
+
+
+/** Работа с картой  */
 private fun settingOsm(context: Context) {
     Configuration.getInstance().load(
         context,
@@ -47,7 +261,6 @@ private fun settingOsm(context: Context) {
     )
     Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
 }
-
 
 /** MapView  */
 @Composable
@@ -58,6 +271,7 @@ fun MapViewXML(
 ) {
     val mapViewState = rememberMapViewWithLifecycle(context)
 
+    // MAP
     AndroidView(
         factory = { mapViewState },
         modifier
@@ -131,8 +345,15 @@ fun IniOsm(context: Context) {
         ))*/
 
     }
-
 }
 
+/** END Работа с картой  */
 
 
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    GpsTrackerTheme {
+        GpsScreen()
+    }
+}

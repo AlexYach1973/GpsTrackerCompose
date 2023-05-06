@@ -18,3 +18,9 @@ val Purple400 = Color(0xFFAB47BC)
 val Purple700 = Color(0xFF7B1FA2)
 val Black = Color(0xFF000000)
 val White = Color(0xFFFFFFFF)
+
+// Transparent
+val WhiteTr = Color(0x66FFFFFF)
+val Purple40Tr = Color(0x666650a4)
+val Purple400Tr = Color(0x66AB47BC)
+val Transparent100 = Color(0x00FFFFFF)

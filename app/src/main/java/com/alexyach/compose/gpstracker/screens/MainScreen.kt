@@ -1,4 +1,4 @@
-package com.alexyach.compose.gpstracker
+package com.alexyach.compose.gpstracker.screens
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
