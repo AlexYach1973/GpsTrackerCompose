@@ -1,12 +1,12 @@
 <resources>
     <string name="app_name">GpsTracker</string>
 
-<!--    BottomItem-->
+    <!--    BottomItem-->
     <string name="gps_screen">шлях</string>
     <string name="list_screen">база</string>
     <string name="settings_screen">параметри</string>
 
-<!--    MainActivity Permission -->
+    <!--    MainActivity Permission -->
     <string name="enable_permission">Дозволити використання локації</string>
     <string name="setting_permission_1">Якщо не вдалося, зайдіть </string>
     <string name="setting_permission_2"> налаштування</string>
@@ -16,15 +16,19 @@
     <string name="velosity">Швидкість:</string>
     <string name="avr_velocity">Середня шв.:</string>
     <string name="distance">Шлях:</string>
+    <string name="date">Дата:</string>
 
-<!--    AlertDialog-->
-    <string name="title_dialog">GPS вимкненний</string>
-    <string name="text_dialog">Хотите включитьБажаєте увімкнути GPS?</string>
-    <string name="ok_dialog">Так</string>
-    <string name="no_dialog">Ні</string>
-    <string name="dismiss_gps">Без GPS працювати не буде</string>
+    <!--    GpsPermissionEnableDialog-->
+    <string name="title_gps_permission_dialog">GPS вимкненний</string>
+    <string name="text_gps_permission_dialog">Хотите включитьБажаєте увімкнути GPS?</string>
+    <string name="ok_gps_permission_dialog">Так</string>
+    <string name="no_gps_permission_dialog">Ні</string>
+    <string name="dismiss_gps_permission_dialog">Без GPS працювати не буде</string>
 
-<!--    Setting Screen-->
+    <!--    SaveTrackDialog-->
+    <string name="title_save_track_dialog">Бажаєте зберегти шлях ?</string>
+
+    <!--    Setting Screen-->
     <string name="update_time">Час оновлення</string>
 
 </resources>

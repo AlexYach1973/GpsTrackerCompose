@@ -15,6 +15,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
@@ -36,6 +37,8 @@ class LocationService : Service() {
     private lateinit var locRequest: LocationRequest
 
     private val binder = LocationServiceBinder()
+
+    val distanceLiveData = MutableLiveData<Float>()
 
     override fun onBind(intent: Intent?): IBinder? {
         return binder
@@ -131,6 +134,9 @@ class LocationService : Service() {
                 )
                 // Отправляем
                 sendLocData(localModel)
+
+                /** NEW */
+                distanceLiveData.value = distance
 
             }
             lastLocation = currentLocation

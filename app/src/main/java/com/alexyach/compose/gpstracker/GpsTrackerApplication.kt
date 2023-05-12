@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.alexyach.compose.gpstracker.data.db.GpsDatabase
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 
 // DataStore
@@ -15,6 +16,9 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 
 class GpsTrackerApplication: Application() {
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    val database by lazy { GpsDatabase.getDatabase(this) }
+    val databaseDao by lazy { GpsDatabase.getDatabase(this).getGpsDao() }
 
     override fun onCreate() {
         super.onCreate()

@@ -19,6 +19,11 @@ val Purple700 = Color(0xFF7B1FA2)
 val Black = Color(0xFF000000)
 val White = Color(0xFFFFFFFF)
 
+val GreenSpeed = Color(0xFF446633)
+val BlueSpeed = Color(0xFF40DBDB)
+val BlueSpeed1 = Color(0xFF369E9E)
+
+
 // Transparent
 val WhiteTr = Color(0x66FFFFFF)
 val Purple40Tr = Color(0x666650a4)

@@ -1,14 +1,17 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.ServiceConnection
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
-import android.os.IBinder
 import android.util.Log
+import android.view.View
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,10 +32,14 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,83 +47,150 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
+import androidx.core.content.ContextCompat.getColor
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
+import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
+import com.alexyach.compose.gpstracker.ui.theme.White
+import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
+import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
+import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.util.Timer
-import java.util.TimerTask
 
+
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun GpsScreen(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val gpsViewModel: GpsScreenViewModel = viewModel(
+        factory = GpsScreenViewModel.Factory
+    )
+
 
     /** Srvice */
-//    lateinit var locationService: LocationService
-//    var isBound by mutableStateOf(false)
+    /*lateinit var locationService: LocationService
+    var isBound by mutableStateOf(false)
 
-    val context = LocalContext.current
-    val gpsViewModel: GpsScreenViewModel = viewModel()
+    val connection = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        val binder = service as LocationService.LocationServiceBinder
+        locationService = binder.getService()
+        isBound = true
+    }
+
+    override fun onServiceDisconnected(name: ComponentName?) {
+        isBound = false
+    }
+}
+    Intent(context, LocationService::class.java).also { intent ->
+        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+    }*/
+    /** *** */
 
     /** LocalBroadcastReceiver */
     val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == LocationService.LOC_MODEL_INTENT) {
                 val locModel = intent.getSerializableExtra(
-                    LocationService.LOC_MODEL_INTENT) as LocationModel
+                    LocationService.LOC_MODEL_INTENT
+                ) as LocationModel
 
-                gpsViewModel.locationUpdate = locModel
+                gpsViewModel.locationUpdateFromReceiver(locModel)
             }
         }
     }
     val locFilter = IntentFilter(LocationService.LOC_MODEL_INTENT)
-    LocalBroadcastManager.getInstance(context).registerReceiver(receiver,locFilter)
+    LocalBroadcastManager.getInstance(context).registerReceiver(receiver, locFilter)
     /** *** */
 
     // Конфигурации для карт
     settingOsm(context)
-    // Привязываемся к XML
-    MapViewXML(context)
-    // Работа с самой картой
-    IniOsm(context)
 
+    // Привязываемся к XML
+    MapViewXML(context,
+        viewModel = gpsViewModel)
+
+    // Работа с самой картой
+    IniOsm(context, gpsViewModel)
+
+    // диалог сохранения
+    var showSaveTrackDialog by remember { mutableStateOf(false) }
 
     Box(
-        modifier = Modifier
+        modifier = Modifier,
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-        ) {
-            ColumnTextTitle()
-            ColumnTextValue(gpsViewModel)
-            Spacer(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(Color.Cyan)
-            )
-            ColumnTwoFab(gpsViewModel)
-        }
 
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+            ) {
+
+                ColumnTextTitle()
+                ColumnTextValue(gpsViewModel)
+                Spacer(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(Color.Cyan)
+                )
+                ColumnTwoFab(
+                    gpsViewModel,
+                    receiver
+                ) {
+                    showSaveTrackDialog = it
+                }
+
+            }
+
+            /** Open Save Dialog */
+            if (showSaveTrackDialog) {
+
+                val trackItem = TrackItem(
+                    time = gpsViewModel.updateTimeLiveData.observeAsState().value.toString(),
+                    date = TimeUtilFormatter.getDate(),
+                    distance = "${String.format("%.1f", gpsViewModel.locationUpdate.distance)} м",
+                    velocity = "${
+                        String.format("%.1f",gpsViewModel.locationUpdate.velocity * 3.6f)
+                    } км/год",
+                    geoPoints =
+                    GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.geoPointsList),
+                    geoMap = gpsViewModel.getScreenshot()
+                )
+
+                SaveTrackDialog(trackItem,
+                    listenerClick = { isSave ->
+                        if (isSave) {
+                            gpsViewModel.insert(trackItem)
+                        }
+                    },
+                    {
+                        showSaveTrackDialog = it
+                    }
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun ColumnTextTitle() {
+fun ColumnTextTitle() {
     Column(
         modifier = Modifier
 //            .background(Color.Red)
@@ -148,9 +222,10 @@ private fun ColumnTextTitle() {
 private fun ColumnTextValue(
     viewModel: GpsScreenViewModel
 ) {
-    val state = viewModel.updateTimeLiveData.observeAsState()
-    val distance = "${String.format("%.1f",viewModel.locationUpdate.distance)} м"
-    val velocity = "${String.format("%.1f",viewModel.locationUpdate.velocity * 3.6)} км/ч"
+    val time = viewModel.updateTimeLiveData.observeAsState()
+    val distance = "${String.format("%.1f", viewModel.locationUpdate.distance)} м"
+    val velocity = "${String.format("%.1f", viewModel.locationUpdate.velocity * 3.6f)} км/год"
+    val averageVelocity = "${String.format("%.1f", viewModel.averageVelocity * 3.6f)} км/год"
 
     Column(
         modifier = Modifier
@@ -161,7 +236,7 @@ private fun ColumnTextValue(
     ) {
 
         Text(
-            text = state.value.toString(),
+            text = time.value.toString(),
             fontSize = 18.sp
         )
         Text(
@@ -169,7 +244,7 @@ private fun ColumnTextValue(
             fontSize = 18.sp
         )
         Text(
-            text = "??? км/ч",
+            text = averageVelocity,
             fontSize = 18.sp
         )
         Text(
@@ -182,13 +257,23 @@ private fun ColumnTextValue(
 
 @Composable
 private fun ColumnTwoFab(
-    gpsViewModel: GpsScreenViewModel
+    gpsViewModel: GpsScreenViewModel,
+    receiver: BroadcastReceiver,
+    showSaveDialog: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     var isServiceRunning by remember { mutableStateOf(false) }
 
     // Проверка, запущен ли сервис в фоне
     isServiceRunning = LocationService.isRunning
+
+    // переменная для создания Screenshot
+    var isScreenshot by remember { mutableStateOf(false) }
+    if (isScreenshot) {
+        gpsViewModel.createScreenShot(LocalView.current)
+        isScreenshot = false
+    }
+
 
     Column(
         modifier = Modifier
@@ -207,10 +292,10 @@ private fun ColumnTwoFab(
                 painterResource(id = R.drawable.ic_my_location),
                 contentDescription = null,
                 modifier = Modifier.size(46.dp)
-//                    .border(width = 1.dp, color = Color.Black, shape = CircleShape)
             )
 
         }
+
 
         FloatingActionButton(
             onClick = {
@@ -220,7 +305,10 @@ private fun ColumnTwoFab(
                 startStopService(
                     context,
                     isServiceRunning,
-                    gpsViewModel
+                    gpsViewModel,
+                    receiver,
+                    showSaveDialog,
+                    { isScreenshot = it }
                 )
 
             },
@@ -230,7 +318,7 @@ private fun ColumnTwoFab(
         ) {
             Icon(
                 painterResource(
-                    id = if (!isServiceRunning) {
+                    if (!isServiceRunning) {
                         R.drawable.ic_play
                     } else {
                         R.drawable.ic_stop
@@ -249,17 +337,26 @@ private fun ColumnTwoFab(
 private fun startStopService(
     context: Context,
     isServiceRunning: Boolean,
-    viewModel: GpsScreenViewModel
+    viewModel: GpsScreenViewModel,
+    receiver: BroadcastReceiver,
+    showSaveDialog: (Boolean) -> Unit,
+    isScreenshot: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
         startLockService(context)
 
-        // Записать начальное время в Сервис, чтоб не обнулялся при выходе из App
+        // Записать начальное время в Сервис, чтоб HE обнулялся при выходе из App
         LocationService.startTime = System.currentTimeMillis()
         viewModel.startTimer()
+//        showSaveDialog(false)
     } else {
+        // Screenshot
+        isScreenshot(true)
+
         context.stopService(Intent(context, LocationService::class.java))
         viewModel.stopTimer()
+        stopReceiver(context, receiver)
+        showSaveDialog(true)
     }
 }
 
@@ -272,6 +369,10 @@ private fun startLockService(context: Context) {
 }
 /** End Service */
 
+/** Stop LocalBroadcastReceiver */
+fun stopReceiver(context: Context, receiver: BroadcastReceiver) {
+    LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver)
+}
 
 /** Работа с картой  */
 private fun settingOsm(context: Context) {
@@ -287,9 +388,13 @@ private fun settingOsm(context: Context) {
 fun MapViewXML(
     context: Context,
     modifier: Modifier = Modifier,
-    onLoad: ((map: MapView) -> Unit)? = null
+    onLoad: ((map: MapView) -> Unit)? = null,
+    viewModel: GpsScreenViewModel
 ) {
     val mapViewState = rememberMapViewWithLifecycle(context)
+
+    /** ??????????? */
+//    viewModel.createTrackBitmap(mapViewState)
 
     // MAP
     AndroidView(
@@ -337,7 +442,16 @@ fun rememberMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
     }
 
 @Composable
-fun IniOsm(context: Context) {
+fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
+
+    Log.d(TAG, " GpsScreen, InitOSM()")
+
+    val pl = viewModel.updatePolyline(viewModel.locationUpdate.geoPointsList)
+    pl?.outlinePaint?.color = getColor(context, R.color.purple_500)
+
+//    val testList = viewModel.locationUpdate.geoPointsList
+//    Log.d(TAG, "GeopointTestList: ${testList}")
+
     AndroidViewBinding(MapBinding::inflate) {
         map.controller.setZoom(17.0)
         // Provider
@@ -354,7 +468,8 @@ fun IniOsm(context: Context) {
         // Добавляем слой на карту, после определения местоположения
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
-            map.overlays.add(mLocOverlay)
+            map.overlays.add(mLocOverlay) // Местоположение
+            map.overlays.add(pl) // Линия
         }
 
 
@@ -363,45 +478,10 @@ fun IniOsm(context: Context) {
             50.4501,
             30.5241
         ))*/
-
     }
+
 }
 /** END Работа с картой  */
-
-
-/** LocalBroadcastReceiver *//*
-val receiver = object : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent?.action == LocationService.LOC_MODEL_INTENT) {
-            val locModel = intent.getSerializableExtra(
-                LocationService.LOC_MODEL_INTENT) as LocationModel
-
-            gpsV
-
-            Log.d(TAG, "GpsScreen, L= ${locModel.distance}, " +
-                    "v = ${locModel.velocity} km/h")
-        }
-    }
-}*/
-/*@Composable
-fun RegisterLocReceiver(gpsViewModel: GpsScreenViewModel) {
-    val context = LocalContext.current
-    val locFilter = IntentFilter(LocationService.LOC_MODEL_INTENT)
-    LocalBroadcastManager.getInstance(context).registerReceiver(receiver,locFilter)
-}*/
-
-/** Service */
-/*val connection = object : ServiceConnection {
-    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        val binder = service as LocationService.LocationServiceBinder
-        locationService = binder.getService()
-        isBound = true
-    }
-
-    override fun onServiceDisconnected(name: ComponentName?) {
-        isBound = false
-    }
-}*/
 
 
 @Preview(showBackground = true)
