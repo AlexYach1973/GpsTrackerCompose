@@ -32,14 +32,15 @@ class GpsScreenViewModel(
     private val databaseDao: GpsDao
 ) : ViewModel() {
 
-    var startFirst = true
-    var pl: Polyline? = Polyline()
+    var testCount: Int = 0
 
-    var locationUpdate by mutableStateOf<LocationModel>(
-        LocationModel(
-            geoPointsList = ArrayList()
-        )
-    )
+    var startFirst = true
+
+    var locationUpdate by mutableStateOf(LocationModel(geoPointsList = ArrayList()))
+
+    var polylineUpdate by mutableStateOf(Polyline())
+
+//    private lateinit var listLocation: List<GeoPoint>
 
     var averageVelocity by mutableStateOf(0.0f)
 
@@ -56,7 +57,7 @@ class GpsScreenViewModel(
         if (LocationService.isRunning) {
             startTimer()
 
-            Log.d(TAG, "GpsScreenViewModel, init{}")
+            Log.d(TAG, "ScreenViewModel, init{}")
         }
     }
 
@@ -84,48 +85,65 @@ class GpsScreenViewModel(
         timer?.cancel()
     }
 
-    // Информация из Receiver
+    /** Информация из Receiver */
     fun locationUpdateFromReceiver(location: LocationModel) {
         locationUpdate = location
-        getAverageVelocity()
+        getAverageVelocity(location)
+
+        updatePolylineNew(location.geoPointsList)
+
+
+//        Log.d(TAG, "ScreenViewModel, locationUpdateFromReceiver ${testCount++}")
     }
 
-    private fun getAverageVelocity() {
+    private fun getAverageVelocity(location: LocationModel) {
         averageVelocity =
-            locationUpdate.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
+            location.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
     }
 
     /** Polyline */
-    fun updatePolyline(list: List<GeoPoint>): Polyline? {
-        return if (list.size > 1 && startFirst) {
+    /*fun updatePolyline(geoPointsList: ArrayList<GeoPoint>): Polyline? {
+        return if (geoPointsList.size > 1 && startFirst) {
             startFirst = false
-            fillPolyline(list)
+            fillPolyline(geoPointsList)
         } else {
-            addOnePoint(list)
+            addOnePoint(geoPointsList)
         }
     }
-    private fun addOnePoint(list: List<GeoPoint>): Polyline? {
+    */
+    private fun updatePolylineNew(list: List<GeoPoint>) {
+            if (list.size > 1 && startFirst) {
+                startFirst = false
+                fillPolyline(list)
+            } else {
+                addOnePoint(list)
+            }
+    }
+
+    private fun addOnePoint(list: List<GeoPoint>) {
         if (list.isNotEmpty()) {
-            pl?.addPoint(list[list.size - 1])
+            Log.d(TAG, "addOnePoint, list.size: ${list.size}")
+//            pl?.addPoint(list.last())
+            polylineUpdate.addPoint(list[list.size - 1])
         }
-        return pl
     }
-    private fun fillPolyline(list: List<GeoPoint>): Polyline? {
+
+    private fun fillPolyline(list: List<GeoPoint>) {
         list.forEach {
-            pl?.addPoint(it)
+            polylineUpdate.addPoint(it)
         }
-        return pl
     }
     /** End Polyline */
 
 
     /** Database */
     fun insert(item: TrackItem) = viewModelScope.launch {
-            databaseDao.insertTrack(item)
-        }
+        databaseDao.insertTrack(item)
+    }
 
     /** ScreenShot */
     lateinit var bitmap: Bitmap
+
     @SuppressLint("ResourceAsColor")
     fun createScreenShot(view: View) {
         bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -135,9 +153,11 @@ class GpsScreenViewModel(
         else canvas.drawColor((R.color.white))
         view.draw(canvas)
     }
+
     fun getScreenshot(): Bitmap {
         return bitmap
     }
+
     /** End ScreenShot */
 
     override fun onCleared() {
@@ -148,7 +168,8 @@ class GpsScreenViewModel(
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GpsTrackerApplication)
+                val application =
+                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GpsTrackerApplication)
                 GpsScreenViewModel(application.databaseDao)
             }
         }

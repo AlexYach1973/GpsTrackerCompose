@@ -38,8 +38,6 @@ class LocationService : Service() {
 
     private val binder = LocationServiceBinder()
 
-    val distanceLiveData = MutableLiveData<Float>()
-
     override fun onBind(intent: Intent?): IBinder? {
         return binder
     }
@@ -96,6 +94,7 @@ class LocationService : Service() {
         super.onDestroy()
         isRunning = false
         locProvider.removeLocationUpdates(locCallback)
+//        lastLocation = null
         Log.d(TAG, "LocationService, onDestroy()")
     }
 
@@ -109,7 +108,7 @@ class LocationService : Service() {
         locProvider = LocationServices.getFusedLocationProviderClient(baseContext)
     }
 
-    // Получаем информацию здесь
+    /** Получаем информацию здесь */
     private val locCallback = object : LocationCallback() {
         override fun onLocationResult(lResult: LocationResult) {
             super.onLocationResult(lResult)
@@ -118,13 +117,10 @@ class LocationService : Service() {
 
             if (lastLocation != null && currentLocation != null) {
                 // Исправляем погрешность GPS
-//                if (currentLocation.speed > 0.2) {
+//                if (currentLocation.speed > 0.2) { // м/с
                     distance += lastLocation?.distanceTo(currentLocation)!!
                     geoPointsList.add(
-                        GeoPoint(
-                            currentLocation.latitude,
-                            currentLocation.longitude
-                        )
+                        GeoPoint(currentLocation.latitude,currentLocation.longitude)
                     )
 //                }
                 val localModel = LocationModel(
@@ -134,10 +130,6 @@ class LocationService : Service() {
                 )
                 // Отправляем
                 sendLocData(localModel)
-
-                /** NEW */
-                distanceLiveData.value = distance
-
             }
             lastLocation = currentLocation
 

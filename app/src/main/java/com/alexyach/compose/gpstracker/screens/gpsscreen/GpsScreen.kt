@@ -5,13 +5,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.os.Build
 import android.util.Log
-import android.view.View
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,8 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalView
@@ -48,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat.getColor
-import androidx.core.graphics.createBitmap
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,12 +53,12 @@ import com.alexyach.compose.gpstracker.databinding.MapBinding
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
-import com.alexyach.compose.gpstracker.ui.theme.White
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
+import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
@@ -123,8 +115,10 @@ fun GpsScreen(
     settingOsm(context)
 
     // Привязываемся к XML
-    MapViewXML(context,
-        viewModel = gpsViewModel)
+    MapViewXML(
+        context,
+        viewModel = gpsViewModel
+    )
 
     // Работа с самой картой
     IniOsm(context, gpsViewModel)
@@ -167,7 +161,7 @@ fun GpsScreen(
                     date = TimeUtilFormatter.getDate(),
                     distance = "${String.format("%.1f", gpsViewModel.locationUpdate.distance)} м",
                     velocity = "${
-                        String.format("%.1f",gpsViewModel.locationUpdate.velocity * 3.6f)
+                        String.format("%.1f", gpsViewModel.locationUpdate.velocity * 3.6f)
                     } км/год",
                     geoPoints =
                     GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.geoPointsList),
@@ -354,8 +348,8 @@ private fun startStopService(
         isScreenshot(true)
 
         context.stopService(Intent(context, LocationService::class.java))
-        viewModel.stopTimer()
         stopReceiver(context, receiver)
+        viewModel.stopTimer()
         showSaveDialog(true)
     }
 }
@@ -393,9 +387,6 @@ fun MapViewXML(
 ) {
     val mapViewState = rememberMapViewWithLifecycle(context)
 
-    /** ??????????? */
-//    viewModel.createTrackBitmap(mapViewState)
-
     // MAP
     AndroidView(
         factory = { mapViewState },
@@ -408,7 +399,6 @@ fun MapViewXML(
 /**  MapLifecycle */
 @Composable
 fun rememberMapViewWithLifecycle(context: Context): MapView {
-//    val context = LocalContext.current
     val mapView = remember {
         MapView(context).apply {
             id = R.id.map
@@ -444,13 +434,16 @@ fun rememberMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
 @Composable
 fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
 
-    Log.d(TAG, " GpsScreen, InitOSM()")
+//    Log.d(TAG, " GpsScreen, InitOSM()")
 
-    val pl = viewModel.updatePolyline(viewModel.locationUpdate.geoPointsList)
-    pl?.outlinePaint?.color = getColor(context, R.color.purple_500)
+    val pl = viewModel.polylineUpdate
+//    val pl = viewModel.updatePolylineNew()
+//    val pl = viewModel.updatePolyline(viewModel.locationUpdate.geoPointsList)
+    pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
-//    val testList = viewModel.locationUpdate.geoPointsList
-//    Log.d(TAG, "GeopointTestList: ${testList}")
+    pl.let {
+//        Log.d(TAG, " IniOsm, pl= ${pl.actualPoints.size}")
+    }
 
     AndroidViewBinding(MapBinding::inflate) {
         map.controller.setZoom(17.0)
@@ -468,8 +461,12 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
         // Добавляем слой на карту, после определения местоположения
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
-            map.overlays.add(mLocOverlay) // Местоположение
             map.overlays.add(pl) // Линия
+            map.overlays.add(mLocOverlay) // Местоположение
+
+
+            // Всегда показывать Zoom (+ -)
+            map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
         }
 
 
@@ -481,6 +478,7 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
     }
 
 }
+
 /** END Работа с картой  */
 
 

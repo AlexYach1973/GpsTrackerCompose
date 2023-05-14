@@ -84,7 +84,7 @@ fun SaveTrackDialog(
     openSaveDialog: (Boolean) -> Unit,
 //    bitmap: Bitmap
 ) {
-    Log.d(TAG, "SaveTrackDialog invoke")
+//    Log.d(TAG, "SaveTrackDialog invoke")
         Card(
             modifier = Modifier.padding(top = 50.dp, start = 50.dp, end = 50.dp),
             shape = RoundedCornerShape(20.dp),
