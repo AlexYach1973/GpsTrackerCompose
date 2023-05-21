@@ -9,12 +9,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.datastore.core.DataStore
@@ -34,11 +32,6 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 
@@ -136,10 +129,10 @@ class LocationService : Service() {
 
     /** Местоположение */
     private fun initLocation() {
-        locRequest = LocationRequest.create()
-        locRequest.interval = 5000
-        locRequest.fastestInterval = 5000
-        locRequest.priority = Priority.PRIORITY_HIGH_ACCURACY
+        locRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            5000L
+        ).build()
 
         locProvider = LocationServices.getFusedLocationProviderClient(baseContext)
     }
