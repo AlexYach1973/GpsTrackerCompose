@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.View
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
@@ -18,6 +20,7 @@ import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
+import com.alexyach.compose.gpstracker.data.location.LocationService.Companion.locationLiveData
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
@@ -33,11 +36,7 @@ class GpsScreenViewModel(
 ) : ViewModel() {
     var locationUpdate by mutableStateOf(LocationModel(geoPointsList = ArrayList()))
 
-    //    var polylineUpdate by mutableStateOf(Polyline())
     private var pl = Polyline()
-
-    var averageVelocity by mutableStateOf(0.0f)
-
 
     /** mutableStateOf плохо обновляется в фоновом потоке (внутри run()),
      * поэтому наблюдаем MutableLiveData и в @Compose пишем .observeAsState()  */
@@ -81,7 +80,7 @@ class GpsScreenViewModel(
         timer?.cancel()
     }
 
-    /** Информация из Receiver */
+    /** Информация из Service через GpsScreen */
     fun locationUpdateFromReceiver(location: LocationModel) {
         locationUpdate = location
         getAverageVelocity(location)
@@ -89,9 +88,12 @@ class GpsScreenViewModel(
 //        Log.d(TAG, "ScreenViewModel, locationUpdateFromReceiver ${location.geoPointsList.size}")
     }
 
-    private fun getAverageVelocity(location: LocationModel) {
-        averageVelocity =
+    fun getAverageVelocity(location: LocationModel?): Float {
+        return if (location != null) {
             location.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
+        } else {
+            0f
+        }
     }
 
     /** Polyline */

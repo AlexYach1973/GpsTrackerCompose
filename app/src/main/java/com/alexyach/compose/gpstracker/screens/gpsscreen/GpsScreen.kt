@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +21,6 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -50,18 +48,15 @@ import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
+import com.alexyach.compose.gpstracker.data.location.LocationService.Companion.locationLiveData
 import com.alexyach.compose.gpstracker.databinding.MapBinding
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
-import org.osmdroid.config.Configuration
-import org.osmdroid.library.BuildConfig
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -75,49 +70,6 @@ fun GpsScreen(
     val gpsViewModel: GpsScreenViewModel = viewModel(
         factory = GpsScreenViewModel.Factory
     )
-
-    /** TEST */
-//    val testObserve = gpsViewModel.distancePrefString.collectAsState()
-
-    /** Srvice */
-    /*lateinit var locationService: LocationService
-    var isBound by mutableStateOf(false)
-
-    val connection = object : ServiceConnection {
-    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-        val binder = service as LocationService.LocationServiceBinder
-        locationService = binder.getService()
-        isBound = true
-    }
-
-    override fun onServiceDisconnected(name: ComponentName?) {
-        isBound = false
-    }
-}
-    Intent(context, LocationService::class.java).also { intent ->
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
-    }*/
-    /** *** */
-
-    /** LocalBroadcastReceiver */
-    val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == LocationService.LOC_MODEL_INTENT) {
-                val locModel = intent.getSerializableExtra(
-                    LocationService.LOC_MODEL_INTENT
-                ) as LocationModel
-
-                gpsViewModel.locationUpdateFromReceiver(locModel)
-            }
-        }
-    }
-    val locFilter = IntentFilter(LocationService.LOC_MODEL_INTENT)
-    LocalBroadcastManager.getInstance(context).registerReceiver(receiver, locFilter)
-    /** *** */
-
-    // Конфигурации для карт
-    // Перенес в MainActivity
-//    settingOsm(context)
 
     // Привязываемся к XML
     MapViewXML(
@@ -150,8 +102,8 @@ fun GpsScreen(
                         .background(Color.Cyan)
                 )
                 ColumnTwoFab(
-                    gpsViewModel,
-                    receiver
+                    gpsViewModel
+//                    receiver
                 ) {
                     showSaveTrackDialog = it
                 }
@@ -222,9 +174,17 @@ private fun ColumnTextValue(
     viewModel: GpsScreenViewModel
 ) {
     val time = viewModel.updateTimeLiveData.observeAsState()
-    val distance = "${String.format("%.1f", viewModel.locationUpdate.distance)} м"
-    val velocity = "${String.format("%.1f", viewModel.locationUpdate.velocity * 3.6f)} км/год"
-    val averageVelocity = "${String.format("%.1f", viewModel.averageVelocity * 3.6f)} км/год"
+
+    /**  LiveData from Service */
+    val locationFromService = locationLiveData.observeAsState().value
+    if (locationFromService != null) {
+        viewModel.locationUpdateFromReceiver(locationFromService)
+    }
+
+    val velocity = "${String.format("%.1f", (locationFromService?.velocity ?: 0f) * 3.6f)} км/год"
+    val distance = "${String.format("%.1f", locationFromService?.distance)} м"
+    val averageVelocity = "${String.format("%.1f", viewModel.getAverageVelocity(locationFromService) * 3.6f)} км/год"
+
 
     Column(
         modifier = Modifier
@@ -257,7 +217,6 @@ private fun ColumnTextValue(
 @Composable
 private fun ColumnTwoFab(
     gpsViewModel: GpsScreenViewModel,
-    receiver: BroadcastReceiver,
     showSaveDialog: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -311,7 +270,7 @@ private fun ColumnTwoFab(
                     context,
                     isServiceRunning,
                     gpsViewModel,
-                    receiver,
+//                    receiver,
                     showSaveDialog,
                     { isScreenshot = it }
                 )
@@ -343,15 +302,12 @@ private fun startStopService(
     context: Context,
     isServiceRunning: Boolean,
     viewModel: GpsScreenViewModel,
-    receiver: BroadcastReceiver,
+//    receiver: BroadcastReceiver,
     showSaveDialog: (Boolean) -> Unit,
     isScreenshot: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
         startLockService(context)
-
-        // Записать начальное время в Сервис, чтоб HE обнулялся при выходе из App
-//        LocationService.startTime = System.currentTimeMillis() // OLD code
 
         // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
         viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
@@ -362,7 +318,7 @@ private fun startStopService(
         isScreenshot(true)
 
         context.stopService(Intent(context, LocationService::class.java))
-        stopReceiver(context, receiver)
+//        stopReceiver(context, receiver)
         viewModel.stopTimer()
         showSaveDialog(true)
     }
@@ -376,20 +332,6 @@ private fun startLockService(context: Context) {
     }
 }
 /** End Service */
-
-/** Stop LocalBroadcastReceiver */
-fun stopReceiver(context: Context, receiver: BroadcastReceiver) {
-    LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver)
-}
-
-/** Работа с картой  */
-/*private fun settingOsm(context: Context) {
-    Configuration.getInstance().load(
-        context,
-        context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE)
-    )
-    Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-}*/
 
 /** MapView  */
 @Composable

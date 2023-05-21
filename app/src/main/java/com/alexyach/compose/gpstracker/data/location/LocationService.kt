@@ -18,6 +18,7 @@ import androidx.core.app.NotificationCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
@@ -50,7 +51,9 @@ class LocationService : Service() {
     private var lastLocation: Location? = null
     private var geoPointsList: ArrayList<GeoPoint> = ArrayList()
     private var distance: Float = 0.0f
-//    private var startTime = 0L
+
+    /** TEST */
+//    val distanceLiveData: MutableLiveData<Float> = MutableLiveData()
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -86,6 +89,15 @@ class LocationService : Service() {
                 velocity = 0.0f,
                 distance = 0.0f,
                 geoPointsList = emptyList<GeoPoint>()
+            )
+        )
+
+        // Обнулить LiveData
+        locationLiveData = MutableLiveData(
+            LocationModel(
+                velocity = 0f,
+                distance = 0f,
+                geoPointsList = emptyList()
             )
         )
 
@@ -158,8 +170,12 @@ class LocationService : Service() {
                     geoPointsList
                 )
                 // Отправляем
-                sendLocData(locModel)
+//                sendLocData(locModel)
                 saveLocDataToDataStore(locModel)
+
+                // LiveData
+//                distanceLiveData.value = distance
+                locationLiveData.value = locModel
             }
             lastLocation = currentLocation
 
@@ -185,11 +201,11 @@ class LocationService : Service() {
     /** End Местоположение */
 
     /** Передача данных на экран */
-    private fun sendLocData(locModel: LocationModel) {
+    /*private fun sendLocData(locModel: LocationModel) {
         val i = Intent(LOC_MODEL_INTENT)
         i.putExtra(LOC_MODEL_INTENT, locModel)
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(i)
-    }
+    }*/
 
     /** Сохранение данных в DataStore */
     private fun saveLocDataToDataStore(locModel: LocationModel) {
@@ -229,7 +245,14 @@ class LocationService : Service() {
         const val LOC_MODEL_INTENT = "loc_intent"
         const val CHANNEL_ID = "channel_1"
         var isRunning = false
-//        var startTime = 0L
+
+        var locationLiveData: MutableLiveData<LocationModel> = MutableLiveData(
+            LocationModel(
+                velocity = 0f,
+                distance = 0f,
+                geoPointsList = emptyList()
+            )
+        )
     }
 
 }
