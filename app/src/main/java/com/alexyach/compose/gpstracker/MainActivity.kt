@@ -1,5 +1,6 @@
 package com.alexyach.compose.gpstracker
 
+import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import android.net.Uri
@@ -33,6 +34,8 @@ import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.utils.GpsPermissionEnableDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import org.osmdroid.config.Configuration
+import org.osmdroid.library.BuildConfig
 
 class MainActivity : ComponentActivity() {
 
@@ -58,6 +61,10 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPermissionsApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        /** MAP Конфигурации*/
+        settingOsm(this)
+
         setContent {
 
             GpsTrackerTheme {
@@ -189,6 +196,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Работа с картой  */
+    private fun settingOsm(context: Context) {
+        Configuration.getInstance().load(
+            context,
+            context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE)
+        )
+        Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
+    }
     override fun onStart() {
         super.onStart()
         /*Intent(this, LocationService::class.java).also { intent ->

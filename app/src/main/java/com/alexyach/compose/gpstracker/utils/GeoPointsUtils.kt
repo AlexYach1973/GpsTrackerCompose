@@ -13,7 +13,23 @@ object GeoPointsUtils {
         list.forEach {
             sb.append("${it.latitude},${it.longitude}/")
         }
-//        Log.d(TAG, "GeoPointsUtils, Points: $sb")
         return sb.toString()
+    }
+
+    fun stringToGeoPoints(geoPoints: String): ArrayList<GeoPoint> {
+        val geoPointsList = ArrayList<GeoPoint>()
+        val temporaryList = geoPoints.split("/")
+
+        temporaryList.forEach {
+            if (it.isEmpty()) return@forEach
+            val points = it.split(",")
+            geoPointsList.add(
+                GeoPoint(
+                    points[0].toDouble(),
+                    points[1].toDouble()
+                )
+            )
+        }
+        return geoPointsList
     }
 }

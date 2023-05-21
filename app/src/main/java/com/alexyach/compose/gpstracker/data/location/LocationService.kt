@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -13,49 +14,91 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.compose.runtime.collectAsState
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.MutableLiveData
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
+import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
+import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
+
+
+private const val PREFERENCES_LOCATION_NAME = "prefLocationName"
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = PREFERENCES_LOCATION_NAME
+)
 
 class LocationService : Service() {
 
-    private var lastLocation: Location? = null
-    private var distance = 0.0f
-    private lateinit var geoPointsList: ArrayList<GeoPoint>
+    lateinit var prefRepositoryLocation: UserPreferencesRepository
+
     private lateinit var locProvider: FusedLocationProviderClient
     private lateinit var locRequest: LocationRequest
-
-    private val binder = LocationServiceBinder()
+    private var lastLocation: Location? = null
+    private var geoPointsList: ArrayList<GeoPoint> = ArrayList()
+    private var distance: Float = 0.0f
+//    private var startTime = 0L
 
     override fun onBind(intent: Intent?): IBinder? {
-        return binder
+        return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startNotification()
         startLocationUpdate()
         isRunning = true
+
         return START_STICKY
     }
 
     override fun onCreate() {
         super.onCreate()
+
+        prefRepositoryLocation = UserPreferencesRepository(dataStore)
+
+        observeDataFromDataStore()
         initLocation()
-        geoPointsList = ArrayList()
 
         Log.d(TAG, "LocationService, onCreate()")
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isRunning = false
+        locProvider.removeLocationUpdates(locCallback)
+
+        // Обнулить DataStore
+        saveLocDataToDataStore(
+            LocationModel(
+                velocity = 0.0f,
+                distance = 0.0f,
+                geoPointsList = emptyList<GeoPoint>()
+            )
+        )
+
+        Log.d(TAG, "LocationService, onDestroy()")
+    }
+
 
     private fun startNotification() {
         // VERSION_CODES.O (Oreo) - Android 8 (API 26)
@@ -90,13 +133,6 @@ class LocationService : Service() {
         startForeground(99, notification)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        isRunning = false
-        locProvider.removeLocationUpdates(locCallback)
-//        lastLocation = null
-        Log.d(TAG, "LocationService, onDestroy()")
-    }
 
     /** Местоположение */
     private fun initLocation() {
@@ -116,24 +152,25 @@ class LocationService : Service() {
             val currentLocation = lResult.lastLocation
 
             if (lastLocation != null && currentLocation != null) {
-                // Исправляем погрешность GPS
+                /** Исправляем погрешность GPS */
 //                if (currentLocation.speed > 0.2) { // м/с
-                    distance += lastLocation?.distanceTo(currentLocation)!!
-                    geoPointsList.add(
-                        GeoPoint(currentLocation.latitude,currentLocation.longitude)
-                    )
+                distance += lastLocation?.distanceTo(currentLocation)!!
+                geoPointsList.add(
+                    GeoPoint(currentLocation.latitude, currentLocation.longitude)
+                )
 //                }
-                val localModel = LocationModel(
+                val locModel = LocationModel(
                     currentLocation.speed,
                     distance,
                     geoPointsList
                 )
                 // Отправляем
-                sendLocData(localModel)
+                sendLocData(locModel)
+                saveLocDataToDataStore(locModel)
             }
             lastLocation = currentLocation
 
-//            Log.d(TAG, "LocationService, Distance: ${distance}")
+//            Log.d(TAG, "LocationService callback, Distance: ${distance}")
         }
     }
 
@@ -152,6 +189,7 @@ class LocationService : Service() {
             Looper.myLooper()
         )
     }
+    /** End Местоположение */
 
     /** Передача данных на экран */
     private fun sendLocData(locModel: LocationModel) {
@@ -159,20 +197,46 @@ class LocationService : Service() {
         i.putExtra(LOC_MODEL_INTENT, locModel)
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(i)
     }
-    /** End Местоположение */
 
+    /** Сохранение данных в DataStore */
+    private fun saveLocDataToDataStore(locModel: LocationModel) {
+        CoroutineScope(Dispatchers.IO).launch {
+            prefRepositoryLocation.saveDistance(locModel.distance)
+        }
 
+        CoroutineScope(Dispatchers.IO).launch {
+            prefRepositoryLocation.saveGeopoints(
+                GeoPointsUtils.geoPointsToString(
+                    locModel.geoPointsList
+                )
+            )
+        }
+//        Log.d(TAG, "Service save data, distance= ${locModel.distance}")
+//        Log.d(TAG, "Service save data, geopoints.size= ${locModel.geoPointsList.size}")
+    }
+
+    /** Чтение данных из DataStore */
+    private fun observeDataFromDataStore() {
+        CoroutineScope(Dispatchers.Main).launch {
+            prefRepositoryLocation.distance.collect {
+                distance = it
+//                Log.d(TAG, "Service observe distance= $it")
+            }
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            prefRepositoryLocation.geoPoints.collect {
+                geoPointsList = GeoPointsUtils.stringToGeoPoints(it)
+//                Log.d(TAG, "Service observe geopoints.size= ${geoPointsList.size}")
+            }
+        }
+    }
 
     companion object {
         const val LOC_MODEL_INTENT = "loc_intent"
         const val CHANNEL_ID = "channel_1"
         var isRunning = false
-        var startTime = 0L
-    }
-
-    inner class LocationServiceBinder : Binder() {
-        fun getService(): LocationService =
-            this@LocationService
+//        var startTime = 0L
     }
 
 }

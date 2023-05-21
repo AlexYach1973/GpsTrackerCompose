@@ -22,6 +22,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -74,6 +76,8 @@ fun GpsScreen(
         factory = GpsScreenViewModel.Factory
     )
 
+    /** TEST */
+//    val testObserve = gpsViewModel.distancePrefString.collectAsState()
 
     /** Srvice */
     /*lateinit var locationService: LocationService
@@ -112,7 +116,8 @@ fun GpsScreen(
     /** *** */
 
     // Конфигурации для карт
-    settingOsm(context)
+    // Перенес в MainActivity
+//    settingOsm(context)
 
     // Привязываемся к XML
     MapViewXML(
@@ -268,6 +273,12 @@ private fun ColumnTwoFab(
         isScreenshot = false
     }
 
+    // CenterLocation
+    var centerLocation by remember { mutableStateOf(false) }
+    if (centerLocation) {
+        CenterLocation(context)
+        centerLocation = false
+    }
 
     Column(
         modifier = Modifier
@@ -276,7 +287,7 @@ private fun ColumnTwoFab(
     ) {
         FloatingActionButton(
             onClick = {
-
+                centerLocation = true
             },
             modifier = Modifier.padding(bottom = 4.dp),
             backgroundColor = Transparent100,
@@ -340,7 +351,10 @@ private fun startStopService(
         startLockService(context)
 
         // Записать начальное время в Сервис, чтоб HE обнулялся при выходе из App
-        LocationService.startTime = System.currentTimeMillis()
+//        LocationService.startTime = System.currentTimeMillis() // OLD code
+
+        // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
+        viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
         viewModel.startTimer()
 //        showSaveDialog(false)
     } else {
@@ -369,13 +383,13 @@ fun stopReceiver(context: Context, receiver: BroadcastReceiver) {
 }
 
 /** Работа с картой  */
-private fun settingOsm(context: Context) {
+/*private fun settingOsm(context: Context) {
     Configuration.getInstance().load(
         context,
         context.getSharedPreferences("osm_pref", Context.MODE_PRIVATE)
     )
     Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
-}
+}*/
 
 /** MapView  */
 @Composable
@@ -385,7 +399,7 @@ fun MapViewXML(
     onLoad: ((map: MapView) -> Unit)? = null,
     viewModel: GpsScreenViewModel
 ) {
-    val mapViewState = rememberMapViewWithLifecycle(context)
+    val mapViewState = rememberMapViewWithLifecycle(context, viewModel)
 
     // MAP
     AndroidView(
@@ -398,7 +412,10 @@ fun MapViewXML(
 
 /**  MapLifecycle */
 @Composable
-fun rememberMapViewWithLifecycle(context: Context): MapView {
+fun rememberMapViewWithLifecycle(
+    context: Context,
+    viewModel: GpsScreenViewModel
+): MapView {
     val mapView = remember {
         MapView(context).apply {
             id = R.id.map
@@ -406,7 +423,7 @@ fun rememberMapViewWithLifecycle(context: Context): MapView {
     }
 
     // Заставляет MapView следовать жизненному циклу этого компонуемого
-    val lifecycleObserver = rememberMapLifecycleObserver(mapView)
+    val lifecycleObserver = rememberMapLifecycleObserver(mapView, viewModel)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     DisposableEffect(lifecycle) {
@@ -420,7 +437,10 @@ fun rememberMapViewWithLifecycle(context: Context): MapView {
 }
 
 @Composable
-fun rememberMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
+fun rememberMapLifecycleObserver(
+    mapView: MapView,
+    viewModel: GpsScreenViewModel
+): LifecycleEventObserver =
     remember(mapView) {
         LifecycleEventObserver { _, event ->
             when (event) {
@@ -436,14 +456,12 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
 
 //    Log.d(TAG, " GpsScreen, InitOSM()")
 
-    val pl = viewModel.polylineUpdate
-//    val pl = viewModel.updatePolylineNew()
-//    val pl = viewModel.updatePolyline(viewModel.locationUpdate.geoPointsList)
+    val pl = viewModel.updatePolylineNew(viewModel.locationUpdate.geoPointsList)
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
-    pl.let {
-//        Log.d(TAG, " IniOsm, pl= ${pl.actualPoints.size}")
-    }
+//    pl?.actualPoints?.let {
+//        Log.d(TAG, " IniOsm, pl.size= ${pl.actualPoints.size}")
+//    }
 
     AndroidViewBinding(MapBinding::inflate) {
         map.controller.setZoom(17.0)
@@ -461,9 +479,13 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
         // Добавляем слой на карту, после определения местоположения
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
-            map.overlays.add(pl) // Линия
             map.overlays.add(mLocOverlay) // Местоположение
 
+            if ( LocationService.isRunning) {
+                map.overlays.add(pl) // Линия
+
+//                Log.d(TAG, "GPS Screen, Overlays add point; ${pl.actualPoints.last()}")
+            }
 
             // Всегда показывать Zoom (+ -)
             map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
@@ -476,9 +498,20 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
             30.5241
         ))*/
     }
-
 }
 
+@Composable
+fun CenterLocation(context: Context) {
+    AndroidViewBinding(MapBinding::inflate) {
+        // Provider
+        val mLocProvider = GpsMyLocationProvider(context)
+        val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
+        mLocOverlay.runOnFirstFix {
+            map.controller.animateTo(mLocOverlay.myLocation)
+        }
+        mLocOverlay.enableFollowLocation()
+    }
+}
 /** END Работа с картой  */
 
 
