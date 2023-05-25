@@ -23,6 +23,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
+import com.alexyach.compose.gpstracker.screens.gpsscreen.GpsScreenViewModel
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -44,22 +45,23 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 
 class LocationService : Service() {
 
-    lateinit var prefRepositoryLocation: UserPreferencesRepository
+    private lateinit var prefRepositoryLocation: UserPreferencesRepository
 
     private lateinit var locProvider: FusedLocationProviderClient
     private lateinit var locRequest: LocationRequest
     private var lastLocation: Location? = null
     private var geoPointsList: ArrayList<GeoPoint> = ArrayList()
     private var distance: Float = 0.0f
-
-    /** TEST */
-//    val distanceLiveData: MutableLiveData<Float> = MutableLiveData()
+    private var intervalMillis = 0
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intervalMillis = intent?.extras?.getInt(GpsScreenViewModel.UPDATE_TIME_KEY) ?: 3000
+//        Log.d(TAG, " Service intervalMillis = $intervalMillis")
+
         startNotification()
         startLocationUpdate()
         isRunning = true
@@ -93,13 +95,13 @@ class LocationService : Service() {
         )
 
         // Обнулить LiveData
-        locationLiveData = MutableLiveData(
+        /*locationLiveData = MutableLiveData(
             LocationModel(
                 velocity = 0f,
                 distance = 0f,
                 geoPointsList = emptyList()
             )
-        )
+        )*/
 
         Log.d(TAG, "LocationService, onDestroy()")
     }
@@ -143,7 +145,7 @@ class LocationService : Service() {
     private fun initLocation() {
         locRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            5000L
+            intervalMillis.toLong()
         ).build()
 
         locProvider = LocationServices.getFusedLocationProviderClient(baseContext)
@@ -169,12 +171,9 @@ class LocationService : Service() {
                     distance,
                     geoPointsList
                 )
-                // Отправляем
-//                sendLocData(locModel)
                 saveLocDataToDataStore(locModel)
 
                 // LiveData
-//                distanceLiveData.value = distance
                 locationLiveData.value = locModel
             }
             lastLocation = currentLocation
@@ -200,12 +199,6 @@ class LocationService : Service() {
     }
     /** End Местоположение */
 
-    /** Передача данных на экран */
-    /*private fun sendLocData(locModel: LocationModel) {
-        val i = Intent(LOC_MODEL_INTENT)
-        i.putExtra(LOC_MODEL_INTENT, locModel)
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(i)
-    }*/
 
     /** Сохранение данных в DataStore */
     private fun saveLocDataToDataStore(locModel: LocationModel) {
@@ -220,7 +213,6 @@ class LocationService : Service() {
                 )
             )
         }
-//        Log.d(TAG, "Service save data, distance= ${locModel.distance}")
 //        Log.d(TAG, "Service save data, geopoints.size= ${locModel.geoPointsList.size}")
     }
 

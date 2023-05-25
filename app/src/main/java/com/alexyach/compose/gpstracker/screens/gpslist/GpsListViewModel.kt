@@ -12,9 +12,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.alexyach.compose.gpstracker.GpsTrackerApplication
 import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
-import com.alexyach.compose.gpstracker.screens.gpsscreen.GpsScreenViewModel
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
+import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import kotlinx.coroutines.launch
+import org.osmdroid.views.overlay.Polyline
 
 class GpsListViewModel(
     private val databaseDao: GpsDao
@@ -22,7 +23,9 @@ class GpsListViewModel(
 
     var allGpsTrack by mutableStateOf<List<TrackItem>>(emptyList<TrackItem>())
 
-//    lateinit var trackDetails: TrackItem
+    var trackDetails by mutableStateOf <TrackItem>(TrackItem())
+
+//    var trackDetails: TrackItem = TrackItem()
 
     init {
         getAllGpsTrack()
@@ -41,9 +44,20 @@ class GpsListViewModel(
         databaseDao.delete(item)
     }
 
-//    fun getTrackDetails(): TrackItem {
-//        return trackDetails
-//    }
+    fun getTrackDetailsPolyline(): Polyline {
+        val pl = Polyline()
+            val listGeoPoints = GeoPointsUtils.stringToGeoPoints(
+                trackDetails.geoPoints
+            )
+
+        if (listGeoPoints.isNotEmpty()) {
+            listGeoPoints.forEach {
+                pl.addPoint(it)
+            }
+        }
+
+        return pl
+    }
 
 
     override fun onCleared() {

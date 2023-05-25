@@ -204,31 +204,6 @@ class MainActivity : ComponentActivity() {
         )
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
     }
-    override fun onStart() {
-        super.onStart()
-        /*Intent(this, LocationService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        }*/
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-//        Log.d(TAG, "MainActivity, onDestroy()")
-    }
-
-
-    /** Service *//*
-    val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as LocationService.LocationServiceBinder
-            locationService = binder.getService()
-            isBound = true
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            isBound = false
-        }
-    }*/
 }
 
 

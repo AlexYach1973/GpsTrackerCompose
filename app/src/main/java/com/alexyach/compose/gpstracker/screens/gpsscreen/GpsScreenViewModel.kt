@@ -1,12 +1,12 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.View
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
@@ -20,7 +20,6 @@ import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
-import com.alexyach.compose.gpstracker.data.location.LocationService.Companion.locationLiveData
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
@@ -34,6 +33,7 @@ class GpsScreenViewModel(
     private val databaseDao: GpsDao,
     private val dataStore: UserPreferencesRepository
 ) : ViewModel() {
+
     var locationUpdate by mutableStateOf(LocationModel(geoPointsList = ArrayList()))
 
     private var pl = Polyline()
@@ -44,7 +44,9 @@ class GpsScreenViewModel(
 
     private var startFirst = true
     private var timer: Timer? = null
-    var startTime = 0L
+    private var startTime = 0L
+    private var stopTime = 0L
+    var timeUpdate = 0
 
 
     init {
@@ -65,12 +67,12 @@ class GpsScreenViewModel(
         // Заруск таймера
         timer?.schedule(object : TimerTask() {
             override fun run() {
-                updateTimeLiveData.postValue(getCurrentTime())
+                updateTimeLiveData.postValue(getCurrentTimeString())
             }
         }, 1, 1)
     }
 
-    private fun getCurrentTime(): String {
+    private fun getCurrentTimeString(): String {
         return TimeUtilFormatter.getTime(
             System.currentTimeMillis() - startTime
         )
@@ -78,10 +80,11 @@ class GpsScreenViewModel(
 
     fun stopTimer() {
         timer?.cancel()
+        stopTime = System.currentTimeMillis()
     }
 
     /** Информация из Service через GpsScreen */
-    fun locationUpdateFromReceiver(location: LocationModel) {
+    fun locationUpdateFromService(location: LocationModel) {
         locationUpdate = location
         getAverageVelocity(location)
 
@@ -89,8 +92,12 @@ class GpsScreenViewModel(
     }
 
     fun getAverageVelocity(location: LocationModel?): Float {
-        return if (location != null) {
-            location.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
+        return if (location != null ) {
+            if (LocationService.isRunning) {
+                location.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
+            } else {
+                location.distance / ((stopTime - startTime) / 1000.0f)
+            }
         } else {
             0f
         }
@@ -129,8 +136,10 @@ class GpsScreenViewModel(
 
 
     /** Database */
-    fun insert(item: TrackItem) = viewModelScope.launch {
-        databaseDao.insertTrack(item)
+    fun insert(item: TrackItem) {
+        viewModelScope.launch {
+            databaseDao.insertTrack(item)
+        }
     }
 
     /** ScreenShot */
@@ -150,7 +159,6 @@ class GpsScreenViewModel(
     fun getScreenshot(): Bitmap {
         return bitmap
     }
-
     /** End ScreenShot */
 
     override fun onCleared() {
@@ -158,6 +166,15 @@ class GpsScreenViewModel(
         // Записать время перед выходом
 //        saveStartTimeToDataStore()
         Log.d(TAG, "ScreenViewModel onCleared()")
+    }
+
+    fun createIntentForService(context: Context): Intent {
+        readUpdateTimeFromDataStore()
+        val intent = Intent(context, LocationService::class.java).apply {
+            putExtra(UPDATE_TIME_KEY, timeUpdate)
+        }
+
+        return intent
     }
 
     /** DataStore */
@@ -177,6 +194,15 @@ class GpsScreenViewModel(
         }
     }
 
+    private fun readUpdateTimeFromDataStore() {
+        viewModelScope.launch {
+            dataStore.updateTime.collect {
+                timeUpdate = it
+                Log.d(TAG, "ScreenViewModel, read timeUpdate= $timeUpdate")
+            }
+        }
+    }
+
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
@@ -189,6 +215,8 @@ class GpsScreenViewModel(
                 )
             }
         }
+
+        const val UPDATE_TIME_KEY = "updateTime"
     }
 
 }

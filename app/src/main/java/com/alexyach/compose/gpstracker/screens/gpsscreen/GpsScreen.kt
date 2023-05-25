@@ -1,10 +1,8 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,10 +41,8 @@ import androidx.core.content.ContextCompat.getColor
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
-import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.data.location.LocationService.Companion.locationLiveData
 import com.alexyach.compose.gpstracker.databinding.MapBinding
@@ -71,6 +67,9 @@ fun GpsScreen(
         factory = GpsScreenViewModel.Factory
     )
 
+    // Достаем из IniOsm()
+    var mLocationOverlay: MyLocationNewOverlay?  by remember { mutableStateOf(null) }
+
     // Привязываемся к XML
     MapViewXML(
         context,
@@ -78,7 +77,10 @@ fun GpsScreen(
     )
 
     // Работа с самой картой
-    IniOsm(context, gpsViewModel)
+    IniOsm(
+        context,
+        gpsViewModel
+    ) { mLocationOverlay = it }
 
     // диалог сохранения
     var showSaveTrackDialog by remember { mutableStateOf(false) }
@@ -102,8 +104,8 @@ fun GpsScreen(
                         .background(Color.Cyan)
                 )
                 ColumnTwoFab(
-                    gpsViewModel
-//                    receiver
+                    gpsViewModel,
+                    mLocationOverlay
                 ) {
                     showSaveTrackDialog = it
                 }
@@ -116,10 +118,8 @@ fun GpsScreen(
                 val trackItem = TrackItem(
                     time = gpsViewModel.updateTimeLiveData.observeAsState().value.toString(),
                     date = TimeUtilFormatter.getDate(),
-                    distance = "${String.format("%.1f", gpsViewModel.locationUpdate.distance)} м",
-                    velocity = "${
-                        String.format("%.1f", gpsViewModel.locationUpdate.velocity * 3.6f)
-                    } км/год",
+                    distance = String.format("%.1f", gpsViewModel.locationUpdate.distance),
+                    speed = String.format("%.1f", gpsViewModel.locationUpdate.velocity * 3.6f),
                     geoPoints =
                     GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.geoPointsList),
                     geoMap = gpsViewModel.getScreenshot()
@@ -178,7 +178,8 @@ private fun ColumnTextValue(
     /**  LiveData from Service */
     val locationFromService = locationLiveData.observeAsState().value
     if (locationFromService != null) {
-        viewModel.locationUpdateFromReceiver(locationFromService)
+        // передача в ViewModel
+        viewModel.locationUpdateFromService(locationFromService)
     }
 
     val velocity = "${String.format("%.1f", (locationFromService?.velocity ?: 0f) * 3.6f)} км/год"
@@ -217,6 +218,7 @@ private fun ColumnTextValue(
 @Composable
 private fun ColumnTwoFab(
     gpsViewModel: GpsScreenViewModel,
+    mLocOverlay: MyLocationNewOverlay?,
     showSaveDialog: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -235,7 +237,7 @@ private fun ColumnTwoFab(
     // CenterLocation
     var centerLocation by remember { mutableStateOf(false) }
     if (centerLocation) {
-        CenterLocation(context)
+        CenterLocation(mLocOverlay)
         centerLocation = false
     }
 
@@ -244,20 +246,24 @@ private fun ColumnTwoFab(
 //            .background(Color.Blue)
             .padding(4.dp),
     ) {
-        FloatingActionButton(
-            onClick = {
-                centerLocation = true
-            },
-            modifier = Modifier.padding(bottom = 4.dp),
-            backgroundColor = Transparent100,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp)
-        ) {
-            Icon(
-                painterResource(id = R.drawable.ic_my_location),
-                contentDescription = null,
-                modifier = Modifier.size(46.dp)
-            )
 
+        // отображаем, толькл когда определится местоположение
+        if (mLocOverlay != null) {
+            FloatingActionButton(
+                onClick = {
+                    centerLocation = true
+                },
+                modifier = Modifier.padding(bottom = 4.dp),
+                backgroundColor = Transparent100,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_my_location),
+                    contentDescription = null,
+                    modifier = Modifier.size(46.dp)
+                )
+
+            }
         }
 
 
@@ -307,7 +313,7 @@ private fun startStopService(
     isScreenshot: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
-        startLockService(context)
+        startLockService(context, viewModel)
 
         // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
         viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
@@ -324,18 +330,20 @@ private fun startStopService(
     }
 }
 
-private fun startLockService(context: Context) {
+private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.startForegroundService(Intent(context, LocationService::class.java))
+        context.startForegroundService(viewModel.createIntentForService(context))
+//        context.startForegroundService(Intent(context, LocationService::class.java))
     } else {
-        context.startService(Intent(context, LocationService::class.java))
+        context.startService(viewModel.createIntentForService(context))
+//        context.startService(Intent(context, LocationService::class.java))
     }
 }
 /** End Service */
 
 /** MapView  */
 @Composable
-fun MapViewXML(
+private fun MapViewXML(
     context: Context,
     modifier: Modifier = Modifier,
     onLoad: ((map: MapView) -> Unit)? = null,
@@ -354,7 +362,7 @@ fun MapViewXML(
 
 /**  MapLifecycle */
 @Composable
-fun rememberMapViewWithLifecycle(
+private fun rememberMapViewWithLifecycle(
     context: Context,
     viewModel: GpsScreenViewModel
 ): MapView {
@@ -379,7 +387,7 @@ fun rememberMapViewWithLifecycle(
 }
 
 @Composable
-fun rememberMapLifecycleObserver(
+private fun rememberMapLifecycleObserver(
     mapView: MapView,
     viewModel: GpsScreenViewModel
 ): LifecycleEventObserver =
@@ -394,26 +402,27 @@ fun rememberMapLifecycleObserver(
     }
 
 @Composable
-fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
+private fun IniOsm(
+    context: Context,
+    viewModel: GpsScreenViewModel,
+    mLocationOverlay: (MyLocationNewOverlay) -> Unit
+) {
 
 //    Log.d(TAG, " GpsScreen, InitOSM()")
 
     val pl = viewModel.updatePolylineNew(viewModel.locationUpdate.geoPointsList)
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
-//    pl?.actualPoints?.let {
-//        Log.d(TAG, " IniOsm, pl.size= ${pl.actualPoints.size}")
-//    }
-
     AndroidViewBinding(MapBinding::inflate) {
         map.controller.setZoom(17.0)
         // Provider
         val mLocProvider = GpsMyLocationProvider(context)
-
         // Создаем слой поверх карты для показа пути
         val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
+
+
         // Включаем следование за  местоположением
         // (но после использования Zoom - отключается)
         mLocOverlay.enableFollowLocation()
@@ -425,14 +434,20 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
 
             if ( LocationService.isRunning) {
                 map.overlays.add(pl) // Линия
-
-//                Log.d(TAG, "GPS Screen, Overlays add point; ${pl.actualPoints.last()}")
             }
+
+            // Передаем mLocationOverlay наверх
+            mLocationOverlay(mLocOverlay)
 
             // Всегда показывать Zoom (+ -)
             map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
         }
 
+        /** Compass */
+         /*val compassOverlay =
+             CompassOverlay(context, InternalCompassOrientationProvider(context), map)
+         compassOverlay.enableCompass()
+         map.overlays.add(compassOverlay)*/
 
         /* TEST Kyiv
         map.controller.animateTo(GeoPoint(
@@ -443,16 +458,15 @@ fun IniOsm(context: Context, viewModel: GpsScreenViewModel) {
 }
 
 @Composable
-fun CenterLocation(context: Context) {
+private fun CenterLocation(mLocOverlay: MyLocationNewOverlay?) {
     AndroidViewBinding(MapBinding::inflate) {
-        // Provider
-        val mLocProvider = GpsMyLocationProvider(context)
-        val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
-        mLocOverlay.runOnFirstFix {
+
+        if (mLocOverlay != null) {
             map.controller.animateTo(mLocOverlay.myLocation)
+            mLocOverlay.enableFollowLocation()
         }
-        mLocOverlay.enableFollowLocation()
     }
+//    Log.d(TAG, "GsScreen CenterLocation, mLocOverlay: ${mLocOverlay?.myLocation}")
 }
 /** END Работа с картой  */
 

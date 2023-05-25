@@ -1,8 +1,6 @@
 package com.alexyach.compose.gpstracker.utils
 
 import android.graphics.Bitmap
-import android.util.Log
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Pink80
 import com.alexyach.compose.gpstracker.ui.theme.Pink950
@@ -185,7 +181,7 @@ private fun ColumnTrackItem(item: TrackItem) {
             fontSize = 18.sp
         )
         Text(
-            text = stringResource(id = R.string.velosity) + item.velocity,
+            text = stringResource(id = R.string.velosity) + item.speed,
             fontSize = 18.sp
         )
         Text(
@@ -208,7 +204,7 @@ fun GreetingPreview() {
             time = "12:00",
             date = "01.01.2002",
             distance = "1254",
-            velocity = "12",
+            speed = "12",
             geoPoints = " -//-",
             geoMap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
         ),{}, {}/*, Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)*/)

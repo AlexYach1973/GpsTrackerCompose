@@ -10,8 +10,8 @@ object TimeUtilFormatter {
     private val timeFormatter = SimpleDateFormat("HH:mm:ss:SS")
     private val dateFormatter = SimpleDateFormat("dd.MM.yyyy HH:mm")
 
-    private val calendar = Calendar.getInstance()
     fun getTime(timeInMillis: Long): String {
+        val calendar = Calendar.getInstance()
         timeFormatter.timeZone = TimeZone.getTimeZone("UTC")
         calendar.timeInMillis = timeInMillis
 
@@ -19,6 +19,7 @@ object TimeUtilFormatter {
     }
 
     fun getDate(): String {
+        val calendar = Calendar.getInstance()
         return dateFormatter.format(calendar.time)
     }
 

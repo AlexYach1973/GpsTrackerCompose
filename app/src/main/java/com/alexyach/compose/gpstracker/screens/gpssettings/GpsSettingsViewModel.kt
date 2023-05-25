@@ -35,14 +35,11 @@ class GpsSettingsViewModel(
             updateTime = it
             updateTimeText = getPrefTextByUpdateTime(it)
 
-//            Log.d(TAG, "GpsSettingsViewModel, updateTimePref it= $it")
-            Log.d(TAG, "GpsSettingsViewModel, updateTimePref Thread= ${Thread.currentThread().name}")
-
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = 3000
-        )
+        ) as StateFlow<Int>
 
     fun savePreferences(selectedOptionsText: String) {
         // Обновили текст для наблюдения
