@@ -1,7 +1,6 @@
 package com.alexyach.compose.gpstracker.screens.gpslist
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,12 +31,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getDrawable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.databinding.MapBinding
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey80
@@ -46,8 +43,6 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
 fun GpsList(
@@ -120,23 +115,17 @@ fun TrackDetails(
     viewModel: GpsListViewModel,
     backToList: (Boolean) -> Unit
 ) {
-    // Достаем из IniOsm()
-    var mLocationOverlay: MyLocationNewOverlay? by remember { mutableStateOf(null) }
-
 
     // Привязываемся к XML
     MapView(
         context = context
-//        onLoad = { map = it }
     )
 
     // Работа с самой картой
     IniOsm(
         context,
         viewModel
-    ) {
-        mLocationOverlay = it
-    }
+    )
 
     Box {
         Column {
@@ -146,10 +135,8 @@ fun TrackDetails(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            ThreeButtons(
-                context = context,
+            TwoButtons(
                 viewModel = viewModel,
-                mLocOverlay = mLocationOverlay,
                 backToList = backToList
             )
         }
@@ -239,21 +226,12 @@ fun TrackInfo(
 }
 
 @Composable
-private fun ThreeButtons(
-    context: Context,
+private fun TwoButtons(
     viewModel: GpsListViewModel,
-    mLocOverlay: MyLocationNewOverlay?,
     backToList: (Boolean) -> Unit
 ) {
 
-    // CenterLocation
-    var centerLocation by remember { mutableStateOf(false) }
-    if (centerLocation) {
-        CenterLocation(mLocOverlay)
-        centerLocation = false
-    }
-
-    // StartPosition
+       // StartPosition
     var startPosition by remember { mutableStateOf(false) }
     if (startPosition) {
         ToStartPosition(viewModel)
@@ -283,23 +261,6 @@ private fun ThreeButtons(
                 )
             }
 
-            if (mLocOverlay != null) {
-                FloatingActionButton(
-                    onClick = {
-                        centerLocation = true
-                    },
-                    backgroundColor = Transparent100,
-                    elevation = FloatingActionButtonDefaults.elevation(0.dp)
-                ) {
-                    Icon(
-                        painterResource(id = org.osmdroid.library.R.drawable.center),
-                        contentDescription = null,
-                        modifier = Modifier.size(46.dp),
-                        tint = Purple40
-                    )
-                }
-            }
-
             FloatingActionButton(
                 onClick = {
                     startPosition = true
@@ -323,35 +284,22 @@ private fun ThreeButtons(
 }
 
 @Composable
-private fun CenterLocation(mLocOverlay: MyLocationNewOverlay?) {
-    AndroidViewBinding(MapBinding::inflate) {
-//        map.controller.setZoom(30.0)
-
-        if (mLocOverlay != null) {
-            map.controller.animateTo(mLocOverlay.myLocation)
-        }
-    }
-}
-
-@Composable
 private fun ToStartPosition(viewModel: GpsListViewModel) {
 
     AndroidViewBinding(MapBinding::inflate) {
-        map.controller.setZoom(10.0)
         // StartPosition
-        map.controller.animateTo(viewModel.getTrackDetailsPolyline().actualPoints[0])
-
-//        Log.d(TAG, "GpsScreen, ToStartPosition, map= $map")
+        map.controller.animateTo(
+            viewModel.getTrackDetailsPolyline().actualPoints[0],
+        10.0, 100L)
     }
 }
 
 @Composable
 private fun IniOsm(
     context: Context,
-    viewModel: GpsListViewModel,
-    mLocationOverlay: (MyLocationNewOverlay) -> Unit
+    viewModel: GpsListViewModel
 ) {
-
+//    Log.d(TAG, "IniOsm")
     val pl: Polyline = viewModel.getTrackDetailsPolyline()
     pl.outlinePaint?.color = ContextCompat.getColor(context, R.color.purple_700)
 
@@ -361,38 +309,26 @@ private fun IniOsm(
         setMarker(context, map, pl.actualPoints)
         map.controller.animateTo(pl.actualPoints[0]) // StartPosition
 
-        val mLocOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), map)
-
-        mLocOverlay.runOnFirstFix {
-            // Передаем mLocationOverlay наверх
-            mLocationOverlay(mLocOverlay)
-
-            Log.d(TAG, "GpsList iniOsm, runOnFirstFix6 ${mLocOverlay.myLocation}")
-        }
-
-        Log.d(TAG, "GpsList iniOsm")
-
-
-        /** Compass */
-        /* val compassOverlay =
+        /** Compass *//*
+         val compassOverlay =
              CompassOverlay(context, InternalCompassOrientationProvider(context), map)
          compassOverlay.enableCompass()
-         map.overlays.add(compassOverlay)*/
+         mapDetails.overlays.add(compassOverlay)*/
     }
 }
 
-private fun setMarker(context: Context, map: MapView, list: List<GeoPoint>) {
-    val startMarker = Marker(map)
+private fun setMarker(context: Context, mapDetails: MapView, list: List<GeoPoint>) {
+    val startMarker = Marker(mapDetails)
     startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
 //    startMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     startMarker.position = list[0]
-    map.overlays.add(startMarker)
+    mapDetails.overlays.add(startMarker)
 
-    val stopMarker = Marker(map)
+    val stopMarker = Marker(mapDetails)
     stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
 //    stopMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     stopMarker.position = list.last()
-    map.overlays.add(stopMarker)
+    mapDetails.overlays.add(stopMarker)
 }
 
 @Composable

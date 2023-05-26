@@ -1,6 +1,5 @@
 package com.alexyach.compose.gpstracker.data.db
 
-import android.graphics.Bitmap
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -19,6 +18,6 @@ data class TrackItem(
     val speed: String = "",
     @ColumnInfo(name = "geo_points")
     val geoPoints: String = "",
-    @ColumnInfo(name = "geo_map")
-    val geoMap: Bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+//    @ColumnInfo(name = "geo_map")
+//    val geoMap: Bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
 )

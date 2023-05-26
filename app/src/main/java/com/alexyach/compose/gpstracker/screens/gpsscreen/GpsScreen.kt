@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,8 +44,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
-import com.alexyach.compose.gpstracker.data.location.LocationService.Companion.locationLiveData
 import com.alexyach.compose.gpstracker.databinding.MapBinding
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
@@ -72,11 +72,11 @@ fun GpsScreen(
 
     // Привязываемся к XML
     MapViewXML(
-        context,
-        viewModel = gpsViewModel
+        context
+//        viewModel = gpsViewModel
     )
 
-    // Работа с самой картой
+       // Работа с самой картой
     IniOsm(
         context,
         gpsViewModel
@@ -118,11 +118,10 @@ fun GpsScreen(
                 val trackItem = TrackItem(
                     time = gpsViewModel.updateTimeLiveData.observeAsState().value.toString(),
                     date = TimeUtilFormatter.getDate(),
-                    distance = String.format("%.1f", gpsViewModel.locationUpdate.distance),
-                    speed = String.format("%.1f", gpsViewModel.locationUpdate.velocity * 3.6f),
+                    distance = String.format("%.1f", gpsViewModel.locationUpdate.value!!.distance),
+                    speed = String.format("%.1f", gpsViewModel.locationUpdate.value!!.velocity * 3.6f),
                     geoPoints =
-                    GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.geoPointsList),
-                    geoMap = gpsViewModel.getScreenshot()
+                    GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.value!!.geoPointsList)
                 )
 
                 SaveTrackDialog(trackItem,
@@ -174,18 +173,15 @@ private fun ColumnTextValue(
     viewModel: GpsScreenViewModel
 ) {
     val time = viewModel.updateTimeLiveData.observeAsState()
+    val location = viewModel.locationUpdate.observeAsState().value
 
-    /**  LiveData from Service */
-    val locationFromService = locationLiveData.observeAsState().value
-    if (locationFromService != null) {
-        // передача в ViewModel
-        viewModel.locationUpdateFromService(locationFromService)
+    var velocity = ""
+    var distance = ""
+    val averageVelocity = "${String.format("%.1f", viewModel.getAverageVelocity() * 3.6f)} км/год"
+    if (location != null) {
+        velocity = "${String.format("%.1f", (location.velocity) * 3.6f)} км/год"
+        distance = "${String.format("%.1f", location.distance)} м"
     }
-
-    val velocity = "${String.format("%.1f", (locationFromService?.velocity ?: 0f) * 3.6f)} км/год"
-    val distance = "${String.format("%.1f", locationFromService?.distance)} м"
-    val averageVelocity = "${String.format("%.1f", viewModel.getAverageVelocity(locationFromService) * 3.6f)} км/год"
-
 
     Column(
         modifier = Modifier
@@ -226,13 +222,6 @@ private fun ColumnTwoFab(
 
     // Проверка, запущен ли сервис в фоне
     isServiceRunning = LocationService.isRunning
-
-    // переменная для создания Screenshot
-    var isScreenshot by remember { mutableStateOf(false) }
-    if (isScreenshot) {
-        gpsViewModel.createScreenShot(LocalView.current)
-        isScreenshot = false
-    }
 
     // CenterLocation
     var centerLocation by remember { mutableStateOf(false) }
@@ -277,8 +266,7 @@ private fun ColumnTwoFab(
                     isServiceRunning,
                     gpsViewModel,
 //                    receiver,
-                    showSaveDialog,
-                    { isScreenshot = it }
+                    showSaveDialog
                 )
 
             },
@@ -308,9 +296,7 @@ private fun startStopService(
     context: Context,
     isServiceRunning: Boolean,
     viewModel: GpsScreenViewModel,
-//    receiver: BroadcastReceiver,
-    showSaveDialog: (Boolean) -> Unit,
-    isScreenshot: (Boolean) -> Unit
+    showSaveDialog: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
         startLockService(context, viewModel)
@@ -320,11 +306,7 @@ private fun startStopService(
         viewModel.startTimer()
 //        showSaveDialog(false)
     } else {
-        // Screenshot
-        isScreenshot(true)
-
         context.stopService(Intent(context, LocationService::class.java))
-//        stopReceiver(context, receiver)
         viewModel.stopTimer()
         showSaveDialog(true)
     }
@@ -346,10 +328,10 @@ private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
 private fun MapViewXML(
     context: Context,
     modifier: Modifier = Modifier,
-    onLoad: ((map: MapView) -> Unit)? = null,
-    viewModel: GpsScreenViewModel
+    onLoad: ((map: MapView) -> Unit)? = null
+//    viewModel: GpsScreenViewModel
 ) {
-    val mapViewState = rememberMapViewWithLifecycle(context, viewModel)
+    val mapViewState = rememberMapViewWithLifecycle(context/*, viewModel*/)
 
     // MAP
     AndroidView(
@@ -363,8 +345,8 @@ private fun MapViewXML(
 /**  MapLifecycle */
 @Composable
 private fun rememberMapViewWithLifecycle(
-    context: Context,
-    viewModel: GpsScreenViewModel
+    context: Context
+//    viewModel: GpsScreenViewModel
 ): MapView {
     val mapView = remember {
         MapView(context).apply {
@@ -373,7 +355,7 @@ private fun rememberMapViewWithLifecycle(
     }
 
     // Заставляет MapView следовать жизненному циклу этого компонуемого
-    val lifecycleObserver = rememberMapLifecycleObserver(mapView, viewModel)
+    val lifecycleObserver = rememberMapLifecycleObserver(mapView/*, viewModel*/)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     DisposableEffect(lifecycle) {
@@ -388,14 +370,22 @@ private fun rememberMapViewWithLifecycle(
 
 @Composable
 private fun rememberMapLifecycleObserver(
-    mapView: MapView,
-    viewModel: GpsScreenViewModel
+    mapView: MapView
+//    viewModel: GpsScreenViewModel
 ): LifecycleEventObserver =
     remember(mapView) {
         LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_RESUME -> {
+                    mapView.onResume()
+                    Log.d(TAG, "GpsScreen ON_RESUME")
+//                    viewModel.startFirst = true
+                }
+                Lifecycle.Event.ON_PAUSE -> {
+                    mapView.onPause()
+//                    viewModel.startFirst = false
+                    Log.d(TAG, "GpsScreen ON_PAUSE")
+                }
                 else -> {}
             }
         }
@@ -410,7 +400,7 @@ private fun IniOsm(
 
 //    Log.d(TAG, " GpsScreen, InitOSM()")
 
-    val pl = viewModel.updatePolylineNew(viewModel.locationUpdate.geoPointsList)
+    val pl = viewModel.updatePolyline()
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
     AndroidViewBinding(MapBinding::inflate) {

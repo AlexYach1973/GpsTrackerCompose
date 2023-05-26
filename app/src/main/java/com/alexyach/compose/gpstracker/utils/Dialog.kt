@@ -205,8 +205,7 @@ fun GreetingPreview() {
             date = "01.01.2002",
             distance = "1254",
             speed = "12",
-            geoPoints = " -//-",
-            geoMap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+            geoPoints = " -//-"
         ),{}, {}/*, Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)*/)
     }
 }

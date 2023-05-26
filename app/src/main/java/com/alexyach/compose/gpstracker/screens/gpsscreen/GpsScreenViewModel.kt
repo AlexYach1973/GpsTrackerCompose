@@ -1,14 +1,8 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.util.Log
-import android.view.View
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -18,7 +12,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.alexyach.compose.gpstracker.GpsTrackerApplication
 import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
-import com.alexyach.compose.gpstracker.data.location.LocationModel
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
@@ -34,7 +27,8 @@ class GpsScreenViewModel(
     private val dataStore: UserPreferencesRepository
 ) : ViewModel() {
 
-    var locationUpdate by mutableStateOf(LocationModel(geoPointsList = ArrayList()))
+    /** Update Location From Service */
+    var locationUpdate = LocationService.locationLiveData
 
     private var pl = Polyline()
 
@@ -42,7 +36,7 @@ class GpsScreenViewModel(
      * поэтому наблюдаем MutableLiveData и в @Compose пишем .observeAsState()  */
     val updateTimeLiveData = MutableLiveData("00:00:00:00")
 
-    private var startFirst = true
+    var startFirst = true
     private var timer: Timer? = null
     private var startTime = 0L
     private var stopTime = 0L
@@ -54,7 +48,8 @@ class GpsScreenViewModel(
         if (LocationService.isRunning) {
             startTimer()
         }
-        Log.d(TAG, "ScreenViewModel, init{}")
+
+        Log.d(TAG, "ScreenViewModel init")
     }
 
     fun startTimer() {
@@ -83,28 +78,17 @@ class GpsScreenViewModel(
         stopTime = System.currentTimeMillis()
     }
 
-    /** Информация из Service через GpsScreen */
-    fun locationUpdateFromService(location: LocationModel) {
-        locationUpdate = location
-        getAverageVelocity(location)
-
-//        Log.d(TAG, "ScreenViewModel, locationUpdateFromReceiver ${location.geoPointsList.size}")
-    }
-
-    fun getAverageVelocity(location: LocationModel?): Float {
-        return if (location != null ) {
-            if (LocationService.isRunning) {
-                location.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
-            } else {
-                location.distance / ((stopTime - startTime) / 1000.0f)
-            }
+    fun getAverageVelocity(): Float {
+        return if (LocationService.isRunning) {
+            locationUpdate.value!!.distance / ((System.currentTimeMillis() - startTime) / 1000.0f)
         } else {
-            0f
+            locationUpdate.value!!.distance / ((stopTime - startTime) / 1000.0f)
         }
     }
 
     /** Polyline */
-    fun updatePolylineNew(list: List<GeoPoint>): Polyline {
+       fun updatePolyline(): Polyline {
+        val list = locationUpdate.value!!.geoPointsList
         return if (list.size > 1 && startFirst) {
             startFirst = false
             fillPolyline(list, pl)
@@ -114,10 +98,12 @@ class GpsScreenViewModel(
     }
 
     private fun addOnePoint(list: List<GeoPoint>, pl: Polyline): Polyline {
-        if (list.isNotEmpty()) {
-            pl.addPoint(list[list.size - 1])
+//        Log.d(TAG, "ScreenViewModel, addOnePoint, pl: ${pl}")
 
-//            Log.d(TAG, "ViewModel, addOnePoint, list: ${list}")
+        if (list.isNotEmpty()) {
+            pl.addPoint(list.last())
+
+//            Log.d(TAG, "ScreenViewModel, addOnePoint, list: ${list.last()}")
         }
         return pl
     }
@@ -127,9 +113,9 @@ class GpsScreenViewModel(
         if (list.isNotEmpty()) {
             list.forEach {
                 pl.addPoint(it)
-//                Log.d(TAG, "ViewModel, fillPolyline, list: ${list}")
             }
         }
+//        Log.d(TAG, "ViewModel, fillPolyline, list: ${list.last()}")
         return pl
     }
     /** End Polyline */
@@ -140,32 +126,6 @@ class GpsScreenViewModel(
         viewModelScope.launch {
             databaseDao.insertTrack(item)
         }
-    }
-
-    /** ScreenShot */
-    lateinit var bitmap: Bitmap
-
-    @SuppressLint("ResourceAsColor")
-    fun createScreenShot(view: View) {
-        bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-
-        /*val canvas = Canvas(bitmap)
-        val bgDrawable = view.background
-        if (bgDrawable != null) bgDrawable.draw(canvas)
-        else canvas.drawColor((R.color.white))
-        view.draw(canvas)*/
-    }
-
-    fun getScreenshot(): Bitmap {
-        return bitmap
-    }
-    /** End ScreenShot */
-
-    override fun onCleared() {
-        super.onCleared()
-        // Записать время перед выходом
-//        saveStartTimeToDataStore()
-        Log.d(TAG, "ScreenViewModel onCleared()")
     }
 
     fun createIntentForService(context: Context): Intent {
@@ -198,11 +158,15 @@ class GpsScreenViewModel(
         viewModelScope.launch {
             dataStore.updateTime.collect {
                 timeUpdate = it
-                Log.d(TAG, "ScreenViewModel, read timeUpdate= $timeUpdate")
+//                Log.d(TAG, "ScreenViewModel, read timeUpdate= $timeUpdate")
             }
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        Log.d(TAG, "ScreenViewModel onCleared()")
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

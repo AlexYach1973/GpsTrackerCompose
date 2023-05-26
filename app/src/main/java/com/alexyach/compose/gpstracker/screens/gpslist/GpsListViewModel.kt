@@ -1,6 +1,5 @@
 package com.alexyach.compose.gpstracker.screens.gpslist
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,7 +11,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.alexyach.compose.gpstracker.GpsTrackerApplication
 import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import kotlinx.coroutines.launch
 import org.osmdroid.views.overlay.Polyline
@@ -22,14 +20,11 @@ class GpsListViewModel(
 ): ViewModel() {
 
     var allGpsTrack by mutableStateOf<List<TrackItem>>(emptyList<TrackItem>())
-
     var trackDetails by mutableStateOf <TrackItem>(TrackItem())
-
-//    var trackDetails: TrackItem = TrackItem()
 
     init {
         getAllGpsTrack()
-        Log.d(TAG, "GpsListViewModel, init{}")
+//        Log.d(TAG, "GpsListViewModel, init{}")
     }
 
     private fun getAllGpsTrack(){
@@ -62,7 +57,7 @@ class GpsListViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        Log.d(TAG, "GpsListViewModel onCleared()")
+//        Log.d(TAG, "GpsListViewModel onCleared()")
     }
 
     companion object {
