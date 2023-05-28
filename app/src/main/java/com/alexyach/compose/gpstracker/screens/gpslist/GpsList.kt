@@ -45,9 +45,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 
 @Composable
-fun GpsList(
-    modifier: Modifier = Modifier
-) {
+fun GpsList() {
     val context = LocalContext.current
     val viewModel: GpsListViewModel = viewModel(
         factory = GpsListViewModel.Factory

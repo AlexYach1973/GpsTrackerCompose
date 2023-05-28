@@ -19,7 +19,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.MutableLiveData
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
@@ -234,7 +233,6 @@ class LocationService : Service() {
     }
 
     companion object {
-        const val LOC_MODEL_INTENT = "loc_intent"
         const val CHANNEL_ID = "channel_1"
         var isRunning = false
 

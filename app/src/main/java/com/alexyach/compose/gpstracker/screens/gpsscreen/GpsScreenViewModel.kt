@@ -2,7 +2,6 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -14,7 +13,6 @@ import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -49,7 +47,7 @@ class GpsScreenViewModel(
             startTimer()
         }
 
-        Log.d(TAG, "ScreenViewModel init")
+//        Log.d(TAG, "ScreenViewModel init")
     }
 
     fun startTimer() {
@@ -98,12 +96,14 @@ class GpsScreenViewModel(
     }
 
     private fun addOnePoint(list: List<GeoPoint>, pl: Polyline): Polyline {
-//        Log.d(TAG, "ScreenViewModel, addOnePoint, pl: ${pl}")
+//        Log.d(TAG, "ScreenViewModel, addOnePoint, pl: ${pl.actualPoints}")
 
-        if (list.isNotEmpty()) {
+        if (list.isNotEmpty() && pl.actualPoints.isNotEmpty()) {
             pl.addPoint(list.last())
 
-//            Log.d(TAG, "ScreenViewModel, addOnePoint, list: ${list.last()}")
+//            Log.d(TAG, "ScreenViewModel, addOnePoint, time: " +
+//                    TimeUtilFormatter.getTime(System.currentTimeMillis())
+//            )
         }
         return pl
     }
@@ -165,7 +165,7 @@ class GpsScreenViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        Log.d(TAG, "ScreenViewModel onCleared()")
+//        Log.d(TAG, "ScreenViewModel onCleared()")
     }
 
     companion object {

@@ -1,7 +1,5 @@
 package com.alexyach.compose.gpstracker.screens.bottomnavigation
 
-import androidx.annotation.IdRes
-import androidx.annotation.IntegerRes
 import androidx.annotation.StringRes
 import com.alexyach.compose.gpstracker.R
 

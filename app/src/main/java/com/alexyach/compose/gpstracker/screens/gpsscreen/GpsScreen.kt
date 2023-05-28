@@ -1,10 +1,8 @@
 package com.alexyach.compose.gpstracker.screens.gpsscreen
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,8 +45,11 @@ import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
+import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
+import com.alexyach.compose.gpstracker.ui.theme.Pink600
+import com.alexyach.compose.gpstracker.ui.theme.Purple40
+import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
@@ -57,18 +60,15 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 
-@SuppressLint("UnrememberedMutableState")
 @Composable
-fun GpsScreen(
-    modifier: Modifier = Modifier
-) {
+fun GpsScreen() {
     val context = LocalContext.current
     val gpsViewModel: GpsScreenViewModel = viewModel(
         factory = GpsScreenViewModel.Factory
     )
 
     // Достаем из IniOsm()
-    var mLocationOverlay: MyLocationNewOverlay?  by remember { mutableStateOf(null) }
+    var mLocationOverlay: MyLocationNewOverlay? by remember { mutableStateOf(null) }
 
     // Привязываемся к XML
     MapViewXML(
@@ -76,7 +76,7 @@ fun GpsScreen(
 //        viewModel = gpsViewModel
     )
 
-       // Работа с самой картой
+    // Работа с самой картой
     IniOsm(
         context,
         gpsViewModel
@@ -119,7 +119,10 @@ fun GpsScreen(
                     time = gpsViewModel.updateTimeLiveData.observeAsState().value.toString(),
                     date = TimeUtilFormatter.getDate(),
                     distance = String.format("%.1f", gpsViewModel.locationUpdate.value!!.distance),
-                    speed = String.format("%.1f", gpsViewModel.locationUpdate.value!!.velocity * 3.6f),
+                    speed = String.format(
+                        "%.1f",
+                        gpsViewModel.locationUpdate.value!!.velocity * 3.6f
+                    ),
                     geoPoints =
                     GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.value!!.geoPointsList)
                 )
@@ -151,19 +154,24 @@ fun ColumnTextTitle() {
 
         Text(
             text = stringResource(id = R.string.time),
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = stringResource(id = R.string.velosity),
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = stringResource(id = R.string.avr_velocity),
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = stringResource(id = R.string.distance),
-            fontSize = 28.sp
+            fontSize = 30.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_bold)),
+            color = PurpleGrey40
         )
     }
 }
@@ -177,7 +185,8 @@ private fun ColumnTextValue(
 
     var velocity = ""
     var distance = ""
-    val averageVelocity = "${String.format("%.1f", viewModel.getAverageVelocity() * 3.6f)} км/год"
+    val averageVelocity =
+        "${String.format("%.1f", viewModel.getAverageVelocity() * 3.6f)} км/год"
     if (location != null) {
         velocity = "${String.format("%.1f", (location.velocity) * 3.6f)} км/год"
         distance = "${String.format("%.1f", location.distance)} м"
@@ -193,19 +202,23 @@ private fun ColumnTextValue(
 
         Text(
             text = time.value.toString(),
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = velocity,
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = averageVelocity,
-            fontSize = 18.sp
+            fontSize = 20.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_regular))
         )
         Text(
             text = distance,
-            fontSize = 28.sp
+            fontSize = 30.sp,
+            fontFamily = FontFamily(Font(R.font.ubuntu_bold))
         )
     }
 }
@@ -247,9 +260,11 @@ private fun ColumnTwoFab(
                 elevation = FloatingActionButtonDefaults.elevation(0.dp)
             ) {
                 Icon(
-                    painterResource(id = R.drawable.ic_my_location),
+                    painterResource(id = org.osmdroid.library.R.drawable.ic_menu_mylocation),
+//                    painterResource(id = R.drawable.ic_my_location),
                     contentDescription = null,
-                    modifier = Modifier.size(46.dp)
+                    modifier = Modifier.size(46.dp),
+                    tint = Purple40
                 )
 
             }
@@ -282,6 +297,11 @@ private fun ColumnTwoFab(
                         R.drawable.ic_stop
                     }
                 ),
+                tint = if (!isServiceRunning) {
+                    GreenPlay
+                } else {
+                    Pink600
+                },
                 contentDescription = null,
                 modifier = Modifier.size(46.dp)
 //                    .border(width = 1.dp, color = Color.Black)
@@ -304,7 +324,6 @@ private fun startStopService(
         // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
         viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
         viewModel.startTimer()
-//        showSaveDialog(false)
     } else {
         context.stopService(Intent(context, LocationService::class.java))
         viewModel.stopTimer()
@@ -315,10 +334,8 @@ private fun startStopService(
 private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         context.startForegroundService(viewModel.createIntentForService(context))
-//        context.startForegroundService(Intent(context, LocationService::class.java))
     } else {
         context.startService(viewModel.createIntentForService(context))
-//        context.startService(Intent(context, LocationService::class.java))
     }
 }
 /** End Service */
@@ -378,14 +395,16 @@ private fun rememberMapLifecycleObserver(
             when (event) {
                 Lifecycle.Event.ON_RESUME -> {
                     mapView.onResume()
-                    Log.d(TAG, "GpsScreen ON_RESUME")
+//                    Log.d(TAG, "GpsScreen ON_RESUME")
 //                    viewModel.startFirst = true
                 }
+
                 Lifecycle.Event.ON_PAUSE -> {
                     mapView.onPause()
 //                    viewModel.startFirst = false
-                    Log.d(TAG, "GpsScreen ON_PAUSE")
+//                    Log.d(TAG, "GpsScreen ON_PAUSE")
                 }
+
                 else -> {}
             }
         }
@@ -397,6 +416,7 @@ private fun IniOsm(
     viewModel: GpsScreenViewModel,
     mLocationOverlay: (MyLocationNewOverlay) -> Unit
 ) {
+    var zoomMap by remember { mutableStateOf(17.0) }
 
 //    Log.d(TAG, " GpsScreen, InitOSM()")
 
@@ -404,7 +424,8 @@ private fun IniOsm(
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
     AndroidViewBinding(MapBinding::inflate) {
-        map.controller.setZoom(17.0)
+        map.controller.setZoom(zoomMap)
+
         // Provider
         val mLocProvider = GpsMyLocationProvider(context)
         // Создаем слой поверх карты для показа пути
@@ -414,7 +435,6 @@ private fun IniOsm(
 
 
         // Включаем следование за  местоположением
-        // (но после использования Zoom - отключается)
         mLocOverlay.enableFollowLocation()
 
         // Добавляем слой на карту, после определения местоположения
@@ -422,7 +442,7 @@ private fun IniOsm(
             map.overlays.clear() // очистили карту
             map.overlays.add(mLocOverlay) // Местоположение
 
-            if ( LocationService.isRunning) {
+            if (LocationService.isRunning) {
                 map.overlays.add(pl) // Линия
             }
 
@@ -431,13 +451,14 @@ private fun IniOsm(
 
             // Всегда показывать Zoom (+ -)
             map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
+            zoomMap = map.zoomLevelDouble
         }
 
         /** Compass */
-         /*val compassOverlay =
-             CompassOverlay(context, InternalCompassOrientationProvider(context), map)
-         compassOverlay.enableCompass()
-         map.overlays.add(compassOverlay)*/
+        /*val compassOverlay =
+            CompassOverlay(context, InternalCompassOrientationProvider(context), map)
+        compassOverlay.enableCompass()
+        map.overlays.add(compassOverlay)*/
 
         /* TEST Kyiv
         map.controller.animateTo(GeoPoint(
@@ -458,6 +479,7 @@ private fun CenterLocation(mLocOverlay: MyLocationNewOverlay?) {
     }
 //    Log.d(TAG, "GsScreen CenterLocation, mLocOverlay: ${mLocOverlay?.myLocation}")
 }
+
 /** END Работа с картой  */
 
 

@@ -1,9 +1,6 @@
 package com.alexyach.compose.gpstracker.utils
 
-import android.util.Log
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import org.osmdroid.util.GeoPoint
-import java.lang.StringBuilder
 
 object GeoPointsUtils {
 

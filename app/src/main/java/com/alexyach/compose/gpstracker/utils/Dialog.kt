@@ -1,6 +1,5 @@
 package com.alexyach.compose.gpstracker.utils
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,8 +76,7 @@ fun GpsPermissionEnableDialog(
 fun SaveTrackDialog(
     item: TrackItem,
     listenerClick: (Boolean) -> Unit,
-    openSaveDialog: (Boolean) -> Unit,
-//    bitmap: Bitmap
+    openSaveDialog: (Boolean) -> Unit
 ) {
 //    Log.d(TAG, "SaveTrackDialog invoke")
         Card(

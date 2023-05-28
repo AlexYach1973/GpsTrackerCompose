@@ -1,6 +1,5 @@
 package com.alexyach.compose.gpstracker.screens.gpssettings
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -44,9 +43,6 @@ class GpsSettingsViewModel(
     fun savePreferences(selectedOptionsText: String) {
         // Обновили текст для наблюдения
         updateTimeText = selectedOptionsText
-
-//        Log.d(TAG, "GpsSettingsViewModel, savePreferences text: $selectedOptionsText")
-//        Log.d(TAG, "GpsSettingsViewModel, savePreferences text: ${getUpdateTimeByText(selectedOptionsText)}")
 
         viewModelScope.launch {
             userPreferencesRepository.saveUpdatePreference(

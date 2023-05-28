@@ -2,7 +2,6 @@ package com.alexyach.compose.gpstracker.data.db
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.core.graphics.scale
 import androidx.room.TypeConverter
 import java.io.ByteArrayOutputStream
 

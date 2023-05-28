@@ -9,15 +9,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.alexyach.compose.gpstracker.ui.theme.Pink80
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
-import com.alexyach.compose.gpstracker.ui.theme.Purple400
-import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.Teal_200
 
 @Composable

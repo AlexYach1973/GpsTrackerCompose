@@ -17,6 +17,7 @@ fun NavGraph(
     NavHost(
         navController = navHostController,
         startDestination = BottomItem.GpsScreen.route,
+        modifier = modifier
     ) {
         composable(BottomItem.GpsScreen.route) {
             GpsScreen()
