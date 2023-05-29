@@ -3,6 +3,7 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +47,7 @@ import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Pink600
@@ -54,8 +57,10 @@ import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
+import kotlinx.coroutines.flow.asStateFlow
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -418,9 +423,9 @@ private fun IniOsm(
 ) {
     var zoomMap by remember { mutableStateOf(17.0) }
 
-//    Log.d(TAG, " GpsScreen, InitOSM()")
+    val pl = viewModel.geopointsList.collectAsState().value
+    if (LocationService.isRunning) viewModel.updatePolyline()
 
-    val pl = viewModel.updatePolyline()
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
     AndroidViewBinding(MapBinding::inflate) {

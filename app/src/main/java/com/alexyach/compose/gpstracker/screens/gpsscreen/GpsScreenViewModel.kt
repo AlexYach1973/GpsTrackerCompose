@@ -14,6 +14,7 @@ import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Polyline
@@ -28,7 +29,7 @@ class GpsScreenViewModel(
     /** Update Location From Service */
     var locationUpdate = LocationService.locationLiveData
 
-    private var pl = Polyline()
+    var geopointsList = MutableStateFlow(Polyline())
 
     /** mutableStateOf плохо обновляется в фоновом потоке (внутри run()),
      * поэтому наблюдаем MutableLiveData и в @Compose пишем .observeAsState()  */
@@ -46,8 +47,6 @@ class GpsScreenViewModel(
         if (LocationService.isRunning) {
             startTimer()
         }
-
-//        Log.d(TAG, "ScreenViewModel init")
     }
 
     fun startTimer() {
@@ -55,7 +54,7 @@ class GpsScreenViewModel(
         timer = Timer()
         readStartTimeFromDataStore()
         // Обнулили линию
-        pl = Polyline()
+        geopointsList.value = Polyline()
 
         // Заруск таймера
         timer?.schedule(object : TimerTask() {
@@ -85,38 +84,28 @@ class GpsScreenViewModel(
     }
 
     /** Polyline */
-       fun updatePolyline(): Polyline {
+    fun updatePolyline() {
         val list = locationUpdate.value!!.geoPointsList
-        return if (list.size > 1 && startFirst) {
+        if (list.size > 1 && startFirst) {
             startFirst = false
-            fillPolyline(list, pl)
+            fillPolyline(list)
         } else {
-            addOnePoint(list, pl)
+            addOnePoint(list)
         }
     }
 
-    private fun addOnePoint(list: List<GeoPoint>, pl: Polyline): Polyline {
-//        Log.d(TAG, "ScreenViewModel, addOnePoint, pl: ${pl.actualPoints}")
-
-        if (list.isNotEmpty() && pl.actualPoints.isNotEmpty()) {
-            pl.addPoint(list.last())
-
-//            Log.d(TAG, "ScreenViewModel, addOnePoint, time: " +
-//                    TimeUtilFormatter.getTime(System.currentTimeMillis())
-//            )
+    private fun addOnePoint(list: List<GeoPoint>) {
+        if (list.isNotEmpty()) {
+            geopointsList.value.addPoint(list.last())
         }
-        return pl
     }
 
-    private fun fillPolyline(list: List<GeoPoint>, pl: Polyline): Polyline {
-
+    private fun fillPolyline(list: List<GeoPoint>) {
         if (list.isNotEmpty()) {
             list.forEach {
-                pl.addPoint(it)
+                geopointsList.value.addPoint(it)
             }
         }
-//        Log.d(TAG, "ViewModel, fillPolyline, list: ${list.last()}")
-        return pl
     }
     /** End Polyline */
 

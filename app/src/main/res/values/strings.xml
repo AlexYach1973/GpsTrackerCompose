@@ -8,8 +8,15 @@
 
     <!--    MainActivity Permission -->
     <string name="enable_permission">Дозволити використання локації</string>
-    <string name="setting_permission_1">Якщо не вдалося, зайдіть </string>
+    <string name="setting_permission_1">Якщо не вдалося, зайдіть в </string>
     <string name="setting_permission_2"> налаштування</string>
+    <string name="setting_permission_3"> та зробить наступне: \n
+        1. Натисніть \'Notification\' та \'All GpsTracker notification\', \n
+        2. Натисніть \'Permission\', далі \'Location\' та \'Allow all the time\' </string>
+
+    <!--    Location Service-->
+    <string name="title_notification">Не зупиняйся !!!</string>
+
 
     <!--    MainActivity Text-->
     <string name="time">Час:</string>

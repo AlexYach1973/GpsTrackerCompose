@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
@@ -26,8 +27,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alexyach.compose.gpstracker.screens.MainScreen
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
@@ -97,7 +100,8 @@ class MainActivity : ComponentActivity() {
                     } else {
                         /** Запрашиваем разрешения */
                         Column(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize()
+                                .padding(8.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -118,10 +122,11 @@ class MainActivity : ComponentActivity() {
                                 withStyle(
                                     style = SpanStyle(
                                         color = Color.DarkGray,
-                                        fontSize = 16.sp
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 ) {
-                                    append(stringResource(id = R.string.setting_permission_1))
+                                    append(stringResource(id = R.string.setting_permission_1) + " ")
                                 }
 
                                 pushStringAnnotation(
@@ -138,6 +143,14 @@ class MainActivity : ComponentActivity() {
                                     append(stringResource(id = R.string.setting_permission_2))
                                 }
                                 pop()
+                                withStyle(
+                                    style = SpanStyle(
+                                        color = Color.DarkGray,
+                                        fontSize = 16.sp
+                                    )
+                                ) {
+                                    append(" " + stringResource(id = R.string.setting_permission_3))
+                                }
                             }
 
                             // Clickable

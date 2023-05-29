@@ -6,6 +6,9 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -13,6 +16,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
 import com.alexyach.compose.gpstracker.ui.theme.Teal_200
 
@@ -67,9 +71,5 @@ fun BottomNavigationScreen(
                 unselectedContentColor = Purple40
             )
         }
-
-
     }
-
-
 }

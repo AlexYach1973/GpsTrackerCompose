@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.datastore.core.DataStore
@@ -35,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.Polyline
 
 
 private const val PREFERENCES_LOCATION_NAME = "prefLocationName"
@@ -76,7 +78,7 @@ class LocationService : Service() {
         observeDataFromDataStore()
         initLocation()
 
-        Log.d(TAG, "LocationService, onCreate()")
+//        Log.d(TAG, "LocationService, onCreate()")
     }
 
     override fun onDestroy() {
@@ -93,16 +95,7 @@ class LocationService : Service() {
             )
         )
 
-        // Обнулить LiveData
-        /*locationLiveData = MutableLiveData(
-            LocationModel(
-                velocity = 0f,
-                distance = 0f,
-                geoPointsList = emptyList()
-            )
-        )*/
-
-        Log.d(TAG, "LocationService, onDestroy()")
+//        Log.d(TAG, "LocationService, onDestroy()")
     }
 
 
@@ -130,9 +123,10 @@ class LocationService : Service() {
         val notification = NotificationCompat.Builder(
             this,
             CHANNEL_ID
-        ).setSmallIcon(R.drawable.ic_home)
-            .setContentTitle("Tracker running")
-            .setContentText("Tracker running")
+        ).setSmallIcon(R.drawable.cross)
+            .setColor(resources.getColor(R.color.purple_200, theme))
+            .setContentTitle(resources.getString(R.string.title_notification))
+//            .setContentText("Tracker running")
             .setContentIntent(pIntent)
             .build()
 
@@ -172,7 +166,7 @@ class LocationService : Service() {
                 )
                 saveLocDataToDataStore(locModel)
 
-                // LiveData
+                /** LiveData */
                 locationLiveData.value = locModel
             }
             lastLocation = currentLocation
