@@ -67,6 +67,8 @@ class LocationService : Service() {
         startLocationUpdate()
         isRunning = true
 
+        isRunningLiveData.value = true
+
         return START_STICKY
     }
 
@@ -85,6 +87,8 @@ class LocationService : Service() {
         super.onDestroy()
         isRunning = false
         locProvider.removeLocationUpdates(locCallback)
+
+        isRunningLiveData.value = false
 
         // Обнулить DataStore
         saveLocDataToDataStore(
@@ -126,7 +130,7 @@ class LocationService : Service() {
         ).setSmallIcon(R.drawable.cross)
             .setColor(resources.getColor(R.color.purple_200, theme))
             .setContentTitle(resources.getString(R.string.title_notification))
-//            .setContentText("Tracker running")
+//            .setContentText("")
             .setContentIntent(pIntent)
             .build()
 
@@ -229,6 +233,9 @@ class LocationService : Service() {
     companion object {
         const val CHANNEL_ID = "channel_1"
         var isRunning = false
+
+        var isRunningLiveData = MutableLiveData(false)
+
 
         var locationLiveData: MutableLiveData<LocationModel> = MutableLiveData(
             LocationModel(

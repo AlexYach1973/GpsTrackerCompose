@@ -35,11 +35,11 @@ class GpsScreenViewModel(
      * поэтому наблюдаем MutableLiveData и в @Compose пишем .observeAsState()  */
     val updateTimeLiveData = MutableLiveData("00:00:00:00")
 
-    var startFirst = true
+    private var startFirst = true
     private var timer: Timer? = null
     private var startTime = 0L
     private var stopTime = 0L
-    var timeUpdate = 0
+    private var timeUpdate = 0
 
 
     init {

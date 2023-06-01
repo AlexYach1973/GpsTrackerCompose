@@ -77,8 +77,8 @@ fun GpsScreen() {
 
     // Привязываемся к XML
     MapViewXML(
-        context
-//        viewModel = gpsViewModel
+        context,
+        viewModel = gpsViewModel
     )
 
     // Работа с самой картой
@@ -223,7 +223,8 @@ private fun ColumnTextValue(
         Text(
             text = distance,
             fontSize = 30.sp,
-            fontFamily = FontFamily(Font(R.font.ubuntu_bold))
+            fontFamily = FontFamily(Font(R.font.ubuntu_bold)),
+            color = PurpleGrey40
         )
     }
 }
@@ -350,10 +351,10 @@ private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
 private fun MapViewXML(
     context: Context,
     modifier: Modifier = Modifier,
-    onLoad: ((map: MapView) -> Unit)? = null
-//    viewModel: GpsScreenViewModel
+    onLoad: ((map: MapView) -> Unit)? = null,
+    viewModel: GpsScreenViewModel
 ) {
-    val mapViewState = rememberMapViewWithLifecycle(context/*, viewModel*/)
+    val mapViewState = rememberMapViewWithLifecycle(context, viewModel)
 
     // MAP
     AndroidView(
@@ -367,8 +368,8 @@ private fun MapViewXML(
 /**  MapLifecycle */
 @Composable
 private fun rememberMapViewWithLifecycle(
-    context: Context
-//    viewModel: GpsScreenViewModel
+    context: Context,
+    viewModel: GpsScreenViewModel
 ): MapView {
     val mapView = remember {
         MapView(context).apply {
@@ -377,7 +378,7 @@ private fun rememberMapViewWithLifecycle(
     }
 
     // Заставляет MapView следовать жизненному циклу этого компонуемого
-    val lifecycleObserver = rememberMapLifecycleObserver(mapView/*, viewModel*/)
+    val lifecycleObserver = rememberMapLifecycleObserver(mapView, viewModel)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
 
     DisposableEffect(lifecycle) {
@@ -392,8 +393,8 @@ private fun rememberMapViewWithLifecycle(
 
 @Composable
 private fun rememberMapLifecycleObserver(
-    mapView: MapView
-//    viewModel: GpsScreenViewModel
+    mapView: MapView,
+    viewModel: GpsScreenViewModel
 ): LifecycleEventObserver =
     remember(mapView) {
         LifecycleEventObserver { _, event ->
@@ -401,12 +402,12 @@ private fun rememberMapLifecycleObserver(
                 Lifecycle.Event.ON_RESUME -> {
                     mapView.onResume()
 //                    Log.d(TAG, "GpsScreen ON_RESUME")
-//                    viewModel.startFirst = true
+//                    viewModel.startTimer()
                 }
 
                 Lifecycle.Event.ON_PAUSE -> {
                     mapView.onPause()
-//                    viewModel.startFirst = false
+//                    viewModel.stopTimer()
 //                    Log.d(TAG, "GpsScreen ON_PAUSE")
                 }
 
@@ -424,7 +425,9 @@ private fun IniOsm(
     var zoomMap by remember { mutableStateOf(17.0) }
 
     val pl = viewModel.geopointsList.collectAsState().value
-    if (LocationService.isRunning) viewModel.updatePolyline()
+    if (LocationService.isRunning) {
+        viewModel.updatePolyline()
+    }
 
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
 
@@ -438,7 +441,6 @@ private fun IniOsm(
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
 
-
         // Включаем следование за  местоположением
         mLocOverlay.enableFollowLocation()
 
@@ -446,10 +448,7 @@ private fun IniOsm(
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
             map.overlays.add(mLocOverlay) // Местоположение
-
-            if (LocationService.isRunning) {
-                map.overlays.add(pl) // Линия
-            }
+            map.overlays.add(pl) // Линия
 
             // Передаем mLocationOverlay наверх
             mLocationOverlay(mLocOverlay)
