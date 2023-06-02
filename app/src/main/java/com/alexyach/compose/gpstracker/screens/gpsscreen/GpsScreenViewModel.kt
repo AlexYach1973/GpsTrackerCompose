@@ -47,6 +47,8 @@ class GpsScreenViewModel(
         if (LocationService.isRunning) {
             startTimer()
         }
+        // Сразу считали updateTime из DataStore
+        readUpdateTimeFromDataStore()
     }
 
     fun startTimer() {
@@ -118,7 +120,7 @@ class GpsScreenViewModel(
     }
 
     fun createIntentForService(context: Context): Intent {
-        readUpdateTimeFromDataStore()
+
         val intent = Intent(context, LocationService::class.java).apply {
             putExtra(UPDATE_TIME_KEY, timeUpdate)
         }

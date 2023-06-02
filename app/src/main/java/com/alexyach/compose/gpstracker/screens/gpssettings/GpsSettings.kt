@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.Divider
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
@@ -53,8 +54,15 @@ fun GpsSettings(
             text = "Setting Screen"
         )
 
-        Divider(color = Purple700, thickness = 1.dp) // Линия
-        Spacer(modifier = modifier.height(14.dp)) // пустое пространство
+        // Линия
+        Divider(
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+            color = Purple700,
+            thickness = 2.dp
+        )
+        // пустое пространство
+        Spacer(modifier = modifier.height(16.dp))
+
         ShowUpdateTime()
     }
 
@@ -66,7 +74,9 @@ fun ShowUpdateTime(
 ) {
 
     Row(
-        modifier.fillMaxWidth(),
+        modifier
+            .fillMaxWidth()
+            .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -84,7 +94,7 @@ fun ShowUpdateTime(
             fontSize = 24.sp,
             fontStyle = FontStyle.Italic
         )
-        Spacer(modifier = modifier.weight(1f))
+        Spacer(modifier = modifier.width(8.dp))
 
         SpinnerMenu()
     }
@@ -163,8 +173,8 @@ fun GreetingPreview() {
 }
 
 enum class UpdateTimeSelected(val text: String, val time: Int){
-    Sec3("3 sec", 3000),
-    Sec5("5 sec", 5000),
-    Sec15("15 sec", 15000),
-    Sec30("30 sec", 30000)
+    Sec3("3 сек", 3000),
+    Sec5("5 сек", 5000),
+    Sec15("15 сек", 15000),
+    Sec30("30 сек", 30000)
 }

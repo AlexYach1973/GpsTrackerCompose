@@ -61,7 +61,7 @@ class LocationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intervalMillis = intent?.extras?.getInt(GpsScreenViewModel.UPDATE_TIME_KEY) ?: 3000
-//        Log.d(TAG, " Service intervalMillis = $intervalMillis")
+        Log.d(TAG, " Service intervalMillis = $intervalMillis")
 
         startNotification()
         startLocationUpdate()
