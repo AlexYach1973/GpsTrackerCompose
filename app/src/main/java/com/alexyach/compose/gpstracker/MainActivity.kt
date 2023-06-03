@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -41,10 +40,6 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.library.BuildConfig
 
 class MainActivity : ComponentActivity() {
-
-    /** Service */
-//    lateinit var locationService: LocationService
-//    var isBound by mutableStateOf(false)
 
     /** Permission */
     // VERSION_CODES.Q - Android 10 (API 29)
@@ -71,8 +66,6 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             GpsTrackerTheme {
-                val context = LocalContext.current
-
                 // A surface container using the 'background' color from the theme
                 val permissionState =
                     rememberMultiplePermissionsState(permissions = permissionsRequired)
@@ -84,13 +77,12 @@ class MainActivity : ComponentActivity() {
 
                     /** Проверяем разрешения */
                     if (permissionState.allPermissionsGranted) {
-                        /** Если все в порядке */
-                        /** Проверяем GPS */
+                        /** Если все в порядке
+                        * Проверяем GPS */
                         CheckLocationEnabled()
 
                         /** Запускаем экран */
                         MainScreen()
-//                        Log.d(TAG, "MainActivity, 82 строка")
 
                         Toast.makeText(
                             this@MainActivity,
@@ -100,7 +92,8 @@ class MainActivity : ComponentActivity() {
                     } else {
                         /** Запрашиваем разрешения */
                         Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
                                 .padding(8.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -218,8 +211,6 @@ class MainActivity : ComponentActivity() {
         Configuration.getInstance().userAgentValue = BuildConfig.APPLICATION_ID
     }
 }
-
-
 
 
 @Preview(showBackground = true)

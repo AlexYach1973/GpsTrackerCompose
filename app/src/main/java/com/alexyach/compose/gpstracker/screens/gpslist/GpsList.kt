@@ -1,6 +1,7 @@
 package com.alexyach.compose.gpstracker.screens.gpslist
 
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.Icon
@@ -51,7 +53,25 @@ fun GpsList() {
         factory = GpsListViewModel.Factory
     )
 
-    val list: List<TrackItem> = viewModel.allGpsTrack
+    val uiState: GpsListUiState = viewModel.gpsListUiState
+    when (uiState) {
+        is GpsListUiState.Loading -> LoadingScreen()
+        is GpsListUiState.Success ->ResultScreen(
+            context = context,
+            viewModel = viewModel,
+            list = uiState.list
+        )
+        is GpsListUiState.Error -> ErrorScreen()
+    }
+}
+
+@Composable
+private fun ResultScreen(
+    context: Context,
+    viewModel: GpsListViewModel,
+    list: List<TrackItem>
+) {
+
     var isListOrDetails by remember { mutableStateOf(true) }
 
     Box(
@@ -69,8 +89,6 @@ fun GpsList() {
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
 
-                    // Загрузка
-//            CircularProgressIndicator()
                 ) {
                     Text(text = "Empty")
                 }
@@ -103,8 +121,33 @@ fun GpsList() {
             )
         }
     }
+}
+
+@Composable
+private fun LoadingScreen() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PurpleGrey80)
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorScreen() {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PurpleGrey80)
+    ) {
+        Text(text = "ERROR")
+    }
 
 }
+
 
 /** Details */
 @Composable
@@ -229,7 +272,7 @@ private fun TwoButtons(
     backToList: (Boolean) -> Unit
 ) {
 
-       // StartPosition
+    // StartPosition
     var startPosition by remember { mutableStateOf(false) }
     if (startPosition) {
         ToStartPosition(viewModel)
@@ -288,7 +331,8 @@ private fun ToStartPosition(viewModel: GpsListViewModel) {
         // StartPosition
         map.controller.animateTo(
             viewModel.getTrackDetailsPolyline().actualPoints[0],
-        10.0, 100L)
+            10.0, 100L
+        )
     }
 }
 
@@ -304,6 +348,13 @@ private fun IniOsm(
     AndroidViewBinding(MapBinding::inflate) {
         map.overlays.add(pl)
         map.controller.setZoom(17.0)
+
+        if (pl.actualPoints.isEmpty()) {
+            map.controller.animateTo(GeoPoint(50.4501, 30.5241)) // Kyiv
+            Toast.makeText(context, "Шлях нульовий", Toast.LENGTH_SHORT).show()
+            return@AndroidViewBinding
+        }
+
         setMarker(context, map, pl.actualPoints)
         map.controller.animateTo(pl.actualPoints[0]) // StartPosition
 
@@ -316,10 +367,12 @@ private fun IniOsm(
 }
 
 private fun setMarker(context: Context, mapDetails: MapView, list: List<GeoPoint>) {
+
     val startMarker = Marker(mapDetails)
     startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
 //    startMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     startMarker.position = list[0]
+
     mapDetails.overlays.add(startMarker)
 
     val stopMarker = Marker(mapDetails)

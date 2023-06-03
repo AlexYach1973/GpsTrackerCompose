@@ -15,11 +15,18 @@ import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import kotlinx.coroutines.launch
 import org.osmdroid.views.overlay.Polyline
 
+/** STATE */
+sealed interface GpsListUiState{
+    data class Success(val list: List<TrackItem>) : GpsListUiState
+    object Error : GpsListUiState
+    object Loading : GpsListUiState
+}
+
 class GpsListViewModel(
     private val databaseDao: GpsDao
 ): ViewModel() {
 
-    var allGpsTrack by mutableStateOf<List<TrackItem>>(emptyList<TrackItem>())
+    var gpsListUiState: GpsListUiState by mutableStateOf(GpsListUiState.Loading)
     var trackDetails by mutableStateOf <TrackItem>(TrackItem())
 
     init {
@@ -29,8 +36,13 @@ class GpsListViewModel(
 
     private fun getAllGpsTrack(){
         viewModelScope.launch {
-            databaseDao.getAllItems().collect{
-                allGpsTrack = it
+
+            try {
+                databaseDao.getAllItems().collect{
+                    gpsListUiState = GpsListUiState.Success(it)
+                }
+            } catch (e: Exception) {
+                gpsListUiState = GpsListUiState.Error
             }
         }
     }

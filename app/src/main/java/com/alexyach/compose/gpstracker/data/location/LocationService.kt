@@ -80,7 +80,7 @@ class LocationService : Service() {
         observeDataFromDataStore()
         initLocation()
 
-//        Log.d(TAG, "LocationService, onCreate()")
+        Log.d(TAG, "LocationService, onCreate()")
     }
 
     override fun onDestroy() {
@@ -99,7 +99,7 @@ class LocationService : Service() {
             )
         )
 
-//        Log.d(TAG, "LocationService, onDestroy()")
+        Log.d(TAG, "LocationService, onDestroy()")
     }
 
 
@@ -157,7 +157,7 @@ class LocationService : Service() {
 
             if (lastLocation != null && currentLocation != null) {
                 /** Исправляем погрешность GPS */
-//                if (currentLocation.speed > 0.2) { // м/с
+//                if (currentLocation.speed > 0.4) { // м/с
                 distance += lastLocation?.distanceTo(currentLocation)!!
                 geoPointsList.add(
                     GeoPoint(currentLocation.latitude, currentLocation.longitude)
@@ -172,6 +172,7 @@ class LocationService : Service() {
 
                 /** LiveData */
                 locationLiveData.value = locModel
+//                Log.d(TAG, "Service location: ${locationLiveData.value}")
             }
             lastLocation = currentLocation
 
@@ -185,9 +186,9 @@ class LocationService : Service() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
+            Log.d(TAG, "Service NO Permission!")
             return
         }
-
         locProvider.requestLocationUpdates(
             locRequest,
             locCallback,

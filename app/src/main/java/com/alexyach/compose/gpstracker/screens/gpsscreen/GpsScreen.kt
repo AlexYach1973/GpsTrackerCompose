@@ -42,7 +42,10 @@ import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat.getColor
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
@@ -76,10 +79,10 @@ fun GpsScreen() {
     var mLocationOverlay: MyLocationNewOverlay? by remember { mutableStateOf(null) }
 
     // Привязываемся к XML
-    MapViewXML(
+    /*MapViewXML(
         context,
         viewModel = gpsViewModel
-    )
+    )*/
 
     // Работа с самой картой
     IniOsm(
@@ -424,7 +427,8 @@ private fun IniOsm(
 ) {
     var zoomMap by remember { mutableStateOf(17.0) }
 
-    val pl = viewModel.geopointsList.collectAsState().value
+    val pl by viewModel.geopointsList.collectAsStateWithLifecycle()
+//    val pl = viewModel.geopointsList.collectAsState().value
     if (LocationService.isRunning) {
         viewModel.updatePolyline()
     }
@@ -438,6 +442,9 @@ private fun IniOsm(
         val mLocProvider = GpsMyLocationProvider(context)
         // Создаем слой поверх карты для показа пути
         val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
+//        Log.d(TAG, "Gps Screen mLocOverlay: ${mLocOverlay.myLocation}")
+
+
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
 
@@ -458,17 +465,6 @@ private fun IniOsm(
             zoomMap = map.zoomLevelDouble
         }
 
-        /** Compass */
-        /*val compassOverlay =
-            CompassOverlay(context, InternalCompassOrientationProvider(context), map)
-        compassOverlay.enableCompass()
-        map.overlays.add(compassOverlay)*/
-
-        /* TEST Kyiv
-        map.controller.animateTo(GeoPoint(
-            50.4501,
-            30.5241
-        ))*/
     }
 }
 

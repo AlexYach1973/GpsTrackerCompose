@@ -30,8 +30,11 @@ import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.Pink80
 import com.alexyach.compose.gpstracker.ui.theme.Pink950
 import com.alexyach.compose.gpstracker.ui.theme.Purple400
+import com.alexyach.compose.gpstracker.ui.theme.Purple400Tr
+import com.alexyach.compose.gpstracker.ui.theme.Purple40Tr
 import com.alexyach.compose.gpstracker.ui.theme.Purple700
 import com.alexyach.compose.gpstracker.ui.theme.Purple80
+import com.alexyach.compose.gpstracker.ui.theme.WhiteTr
 
 /** AlertDialog */
 @Composable
@@ -80,7 +83,8 @@ fun SaveTrackDialog(
 ) {
 //    Log.d(TAG, "SaveTrackDialog invoke")
         Card(
-            modifier = Modifier.padding(top = 50.dp, start = 50.dp, end = 50.dp),
+            modifier = Modifier
+                .padding(top = 50.dp, start = 50.dp, end = 50.dp),
             shape = RoundedCornerShape(20.dp),
             elevation = 8.dp
         ) {
@@ -88,6 +92,7 @@ fun SaveTrackDialog(
                 modifier = Modifier
                     .background(
                         brush = Brush.verticalGradient(
+//                            colors = listOf(Purple400Tr, Purple40Tr)
                             colors = listOf(Purple400,Purple80)
                         )
                     )
