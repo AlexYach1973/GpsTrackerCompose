@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +42,7 @@ import com.alexyach.compose.gpstracker.ui.theme.Purple40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey80
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
+import com.alexyach.compose.gpstracker.utils.rememberMapViewWithLifecycleUtil
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
@@ -143,7 +145,7 @@ private fun ErrorScreen() {
             .fillMaxSize()
             .background(PurpleGrey80)
     ) {
-        Text(text = "ERROR")
+        Text(text = "ERROR reading Room")
     }
 
 }
@@ -157,16 +159,14 @@ fun TrackDetails(
     backToList: (Boolean) -> Unit
 ) {
 
-    // Привязываемся к XML
-    MapView(
-        context = context
+    val mapView = rememberMapViewWithLifecycleUtil()
+
+    MapViewContainer(
+        context = context,
+        map = mapView,
+        viewModel = viewModel
     )
 
-    // Работа с самой картой
-    IniOsm(
-        context,
-        viewModel
-    )
 
     Box {
         Column {
@@ -318,8 +318,6 @@ private fun TwoButtons(
                     tint = Purple40
                 )
             }
-
-
         }
     }
 }
@@ -337,32 +335,31 @@ private fun ToStartPosition(viewModel: GpsListViewModel) {
 }
 
 @Composable
-private fun IniOsm(
+private fun MapViewContainer(
     context: Context,
+    map: MapView,
     viewModel: GpsListViewModel
 ) {
-//    Log.d(TAG, "IniOsm")
     val pl: Polyline = viewModel.getTrackDetailsPolyline()
     pl.outlinePaint?.color = ContextCompat.getColor(context, R.color.purple_700)
 
-    AndroidViewBinding(MapBinding::inflate) {
+    val coroutineScope = rememberCoroutineScope()
+
+    AndroidView({map}) {
         map.overlays.add(pl)
         map.controller.setZoom(17.0)
 
-        if (pl.actualPoints.isEmpty()) {
-            map.controller.animateTo(GeoPoint(50.4501, 30.5241)) // Kyiv
-            Toast.makeText(context, "Шлях нульовий", Toast.LENGTH_SHORT).show()
-            return@AndroidViewBinding
-        }
+//        coroutineScope.launch {
+            if (pl.actualPoints.isEmpty()) {
+                map.controller.animateTo(GeoPoint(50.4501, 30.5241)) // Kyiv
+                Toast.makeText(context, "Шлях нульовий", Toast.LENGTH_SHORT).show()
+                return@AndroidView
+            }
 
-        setMarker(context, map, pl.actualPoints)
-        map.controller.animateTo(pl.actualPoints[0]) // StartPosition
+            setMarker(context, map, pl.actualPoints)
+            map.controller.animateTo(pl.actualPoints[0]) // StartPosition
+//        }
 
-        /** Compass *//*
-         val compassOverlay =
-             CompassOverlay(context, InternalCompassOrientationProvider(context), map)
-         compassOverlay.enableCompass()
-         mapDetails.overlays.add(compassOverlay)*/
     }
 }
 
@@ -380,33 +377,6 @@ private fun setMarker(context: Context, mapDetails: MapView, list: List<GeoPoint
 //    stopMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     stopMarker.position = list.last()
     mapDetails.overlays.add(stopMarker)
-}
-
-@Composable
-private fun MapView(
-    context: Context,
-    modifier: Modifier = Modifier,
-    onLoad: ((map: MapView) -> Unit)? = null
-) {
-    val mapViewState = rememberMapView(context)
-
-    AndroidView(
-        factory = { mapViewState },
-        modifier
-    ) { mapView ->
-        onLoad?.invoke(mapView)
-    }
-}
-
-@Composable
-private fun rememberMapView(context: Context): MapView {
-    val mapView = remember {
-        MapView(context).apply {
-            id = R.id.map
-        }
-    }
-
-    return mapView
 }
 
 

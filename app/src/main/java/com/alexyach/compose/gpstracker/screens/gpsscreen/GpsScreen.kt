@@ -3,7 +3,6 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +17,6 @@ import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
@@ -40,17 +36,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat.getColor
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
-import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Pink600
@@ -60,10 +51,9 @@ import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
-import kotlinx.coroutines.flow.asStateFlow
+import com.alexyach.compose.gpstracker.utils.rememberMapViewWithLifecycleUtil
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
@@ -78,17 +68,13 @@ fun GpsScreen() {
     // Достаем из IniOsm()
     var mLocationOverlay: MyLocationNewOverlay? by remember { mutableStateOf(null) }
 
-    // Привязываемся к XML
-    /*MapViewXML(
-        context,
+    val mapView = rememberMapViewWithLifecycleUtil()
+//    Log.d(TAG, "GpsScreen mapView: ${mapView}")
+    MapViewContainer(
+        context = context,
+        map = mapView,
         viewModel = gpsViewModel
-    )*/
-
-    // Работа с самой картой
-    IniOsm(
-        context,
-        gpsViewModel
-    ) { mLocationOverlay = it }
+    ) {mLocationOverlay = it}
 
     // диалог сохранения
     var showSaveTrackDialog by remember { mutableStateOf(false) }
@@ -349,109 +335,34 @@ private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
 }
 /** End Service */
 
-/** MapView  */
 @Composable
-private fun MapViewXML(
+private fun MapViewContainer(
     context: Context,
-    modifier: Modifier = Modifier,
-    onLoad: ((map: MapView) -> Unit)? = null,
-    viewModel: GpsScreenViewModel
-) {
-    val mapViewState = rememberMapViewWithLifecycle(context, viewModel)
-
-    // MAP
-    AndroidView(
-        factory = { mapViewState },
-        modifier
-    ) { mapView ->
-        onLoad?.invoke(mapView)
-    }
-}
-
-/**  MapLifecycle */
-@Composable
-private fun rememberMapViewWithLifecycle(
-    context: Context,
-    viewModel: GpsScreenViewModel
-): MapView {
-    val mapView = remember {
-        MapView(context).apply {
-            id = R.id.map
-        }
-    }
-
-    // Заставляет MapView следовать жизненному циклу этого компонуемого
-    val lifecycleObserver = rememberMapLifecycleObserver(mapView, viewModel)
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-
-    DisposableEffect(lifecycle) {
-        lifecycle.addObserver(lifecycleObserver)
-        onDispose {
-            lifecycle.removeObserver(lifecycleObserver)
-        }
-    }
-
-    return mapView
-}
-
-@Composable
-private fun rememberMapLifecycleObserver(
-    mapView: MapView,
-    viewModel: GpsScreenViewModel
-): LifecycleEventObserver =
-    remember(mapView) {
-        LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    mapView.onResume()
-//                    Log.d(TAG, "GpsScreen ON_RESUME")
-//                    viewModel.startTimer()
-                }
-
-                Lifecycle.Event.ON_PAUSE -> {
-                    mapView.onPause()
-//                    viewModel.stopTimer()
-//                    Log.d(TAG, "GpsScreen ON_PAUSE")
-                }
-
-                else -> {}
-            }
-        }
-    }
-
-@Composable
-private fun IniOsm(
-    context: Context,
+    map: MapView,
     viewModel: GpsScreenViewModel,
     mLocationOverlay: (MyLocationNewOverlay) -> Unit
 ) {
     var zoomMap by remember { mutableStateOf(17.0) }
 
     val pl by viewModel.geopointsList.collectAsStateWithLifecycle()
-//    val pl = viewModel.geopointsList.collectAsState().value
+    pl.outlinePaint?.color = getColor(context, R.color.purple_500)
     if (LocationService.isRunning) {
         viewModel.updatePolyline()
     }
 
-    pl.outlinePaint?.color = getColor(context, R.color.purple_500)
-
-    AndroidViewBinding(MapBinding::inflate) {
+    AndroidView({ map }) {
+//    AndroidViewBinding(MapBinding::inflate) {
         map.controller.setZoom(zoomMap)
 
         // Provider
         val mLocProvider = GpsMyLocationProvider(context)
         // Создаем слой поверх карты для показа пути
         val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
-//        Log.d(TAG, "Gps Screen mLocOverlay: ${mLocOverlay.myLocation}")
-
-
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
-
         // Включаем следование за  местоположением
         mLocOverlay.enableFollowLocation()
 
-        // Добавляем слой на карту, после определения местоположения
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
             map.overlays.add(mLocOverlay) // Местоположение
@@ -459,12 +370,11 @@ private fun IniOsm(
 
             // Передаем mLocationOverlay наверх
             mLocationOverlay(mLocOverlay)
-
-            // Всегда показывать Zoom (+ -)
-            map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
-            zoomMap = map.zoomLevelDouble
         }
 
+        // Всегда показывать Zoom (+ -)
+    map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
+    zoomMap = map.zoomLevelDouble
     }
 }
 
