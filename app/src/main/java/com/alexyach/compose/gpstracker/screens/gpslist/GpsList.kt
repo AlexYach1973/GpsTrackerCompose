@@ -9,16 +9,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -38,11 +42,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.databinding.MapBinding
+import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
+import com.alexyach.compose.gpstracker.ui.theme.Purple40Tr
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey80
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
 import com.alexyach.compose.gpstracker.utils.rememberMapViewWithLifecycleUtil
+import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
@@ -58,11 +65,12 @@ fun GpsList() {
     val uiState: GpsListUiState = viewModel.gpsListUiState
     when (uiState) {
         is GpsListUiState.Loading -> LoadingScreen()
-        is GpsListUiState.Success ->ResultScreen(
+        is GpsListUiState.Success -> ResultScreen(
             context = context,
             viewModel = viewModel,
             list = uiState.list
         )
+
         is GpsListUiState.Error -> ErrorScreen()
     }
 }
@@ -96,23 +104,56 @@ private fun ResultScreen(
                 }
 
             } else {
-
-                LazyColumn(
-                    modifier = Modifier.padding(bottom = 50.dp),
-                ) {
-                    itemsIndexed(list) { index, item ->
-                        ItemList(item = item, { isDelete ->
-                            if (isDelete) {
-                                viewModel.delete(item)
-                            }
-                        }, {
-                            viewModel.trackDetails = item
-                            isListOrDetails = false
+                Box {
+                    val listState = rememberLazyListState()
+                    LazyColumn(
+                        modifier = Modifier.padding(bottom = 50.dp),
+                        state = listState
+                    ) {
+                        itemsIndexed(list) { index, item ->
+                            ItemList(item = item, { isDelete ->
+                                if (isDelete) {
+                                    viewModel.delete(item)
+                                }
+                            }, {
+                                viewModel.trackDetails = item
+                                isListOrDetails = false
 //                            Log.d(TAG, "GpsList Item: ${item.id}")
+                            }
+                            )
                         }
-                        )
                     }
 
+                    /** Button UP */
+                    val showButton by remember {
+                        derivedStateOf {
+                            listState.firstVisibleItemIndex > 0
+                        }
+                    }
+
+                    if (showButton) {
+                        val coroutineScope = rememberCoroutineScope()
+
+                        FloatingActionButton(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .navigationBarsPadding()
+                                .padding(8.dp),
+                            onClick = {
+                                coroutineScope.launch {
+                                    listState.scrollToItem(0)
+                                }
+                            },
+                            backgroundColor = PurpleGrey40
+                        ) {
+                            Icon(
+                                painterResource(id = android.R.drawable.arrow_up_float),
+                                contentDescription = null,
+                                modifier = Modifier.size(30.dp),
+                                tint = PurpleGrey80
+                            )
+                        }
+                    }
                 }
             }
         } else {
@@ -343,23 +384,18 @@ private fun MapViewContainer(
     val pl: Polyline = viewModel.getTrackDetailsPolyline()
     pl.outlinePaint?.color = ContextCompat.getColor(context, R.color.purple_700)
 
-    val coroutineScope = rememberCoroutineScope()
-
-    AndroidView({map}) {
+    AndroidView({ map }) {
         map.overlays.add(pl)
         map.controller.setZoom(17.0)
 
-//        coroutineScope.launch {
-            if (pl.actualPoints.isEmpty()) {
-                map.controller.animateTo(GeoPoint(50.4501, 30.5241)) // Kyiv
-                Toast.makeText(context, "Шлях нульовий", Toast.LENGTH_SHORT).show()
-                return@AndroidView
-            }
+        if (pl.actualPoints.isEmpty()) {
+            map.controller.animateTo(GeoPoint(50.4501, 30.5241)) // Kyiv
+            Toast.makeText(context, "Шлях нульовий", Toast.LENGTH_SHORT).show()
+            return@AndroidView
+        }
 
-            setMarker(context, map, pl.actualPoints)
-            map.controller.animateTo(pl.actualPoints[0]) // StartPosition
-//        }
-
+        setMarker(context, map, pl.actualPoints)
+        map.controller.animateTo(pl.actualPoints[0]) // StartPosition
     }
 }
 

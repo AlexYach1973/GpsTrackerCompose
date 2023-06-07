@@ -29,8 +29,10 @@ fun rememberMapViewWithLifecycleUtil(): MapView {
     DisposableEffect(key1 = lifecycle, key2 = mapView){
         val lifecycleObserver = getMapLifecycleObserver(mapView)
         lifecycle.addObserver(lifecycleObserver)
+//                Log.d(TAG, "addObserver map: ${mapView.id}")
         onDispose {
             lifecycle.removeObserver(lifecycleObserver)
+//                Log.d(TAG, "onDispose map: ${mapView.id}")
         }
     }
     return mapView

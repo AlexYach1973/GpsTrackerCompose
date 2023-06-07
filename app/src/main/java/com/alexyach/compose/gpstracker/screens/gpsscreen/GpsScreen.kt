@@ -21,10 +21,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -46,10 +47,11 @@ import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Pink600
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
+import com.alexyach.compose.gpstracker.ui.theme.Purple40Tr
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
+import com.alexyach.compose.gpstracker.ui.theme.WhiteTr
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
-import com.alexyach.compose.gpstracker.utils.SaveTrackDialog
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import com.alexyach.compose.gpstracker.utils.rememberMapViewWithLifecycleUtil
 import org.osmdroid.views.CustomZoomButtonsController
@@ -74,10 +76,10 @@ fun GpsScreen() {
         context = context,
         map = mapView,
         viewModel = gpsViewModel
-    ) {mLocationOverlay = it}
+    ) { mLocationOverlay = it }
 
     // диалог сохранения
-    var showSaveTrackDialog by remember { mutableStateOf(false) }
+    var showSaveTrack by rememberSaveable { mutableStateOf(false) }
 
     Box(
         modifier = Modifier,
@@ -92,22 +94,23 @@ fun GpsScreen() {
 
                 ColumnTextTitle()
                 ColumnTextValue(gpsViewModel)
-                Spacer(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(Color.Cyan)
-                )
-                ColumnTwoFab(
-                    gpsViewModel,
-                    mLocationOverlay
-                ) {
-                    showSaveTrackDialog = it
-                }
+            }
 
+            Spacer(
+                modifier = Modifier
+                    .weight(1f)
+//                    .background(Color.Cyan)
+            )
+
+            ColumnFabPlayStop(
+                gpsViewModel,
+                mLocationOverlay
+            ) {
+                showSaveTrack = it
             }
 
             /** Open Save Dialog */
-            if (showSaveTrackDialog) {
+            if (showSaveTrack) {
 
                 val trackItem = TrackItem(
                     time = gpsViewModel.updateTimeLiveData.observeAsState().value.toString(),
@@ -121,16 +124,10 @@ fun GpsScreen() {
                     GeoPointsUtils.geoPointsToString(gpsViewModel.locationUpdate.value!!.geoPointsList)
                 )
 
-                SaveTrackDialog(trackItem,
-                    listenerClick = { isSave ->
-                        if (isSave) {
-                            gpsViewModel.insert(trackItem)
-                        }
-                    },
-                    {
-                        showSaveTrackDialog = it
-                    }
-                )
+                ColumnFabSave(
+                    trackItem,
+                    gpsViewModel
+                ) { showSaveTrack = it }
             }
         }
     }
@@ -220,7 +217,7 @@ private fun ColumnTextValue(
 
 
 @Composable
-private fun ColumnTwoFab(
+private fun ColumnFabPlayStop(
     gpsViewModel: GpsScreenViewModel,
     mLocOverlay: MyLocationNewOverlay?,
     showSaveDialog: (Boolean) -> Unit
@@ -265,7 +262,6 @@ private fun ColumnTwoFab(
             }
         }
 
-
         FloatingActionButton(
             onClick = {
                 isServiceRunning = !isServiceRunning
@@ -275,7 +271,6 @@ private fun ColumnTwoFab(
                     context,
                     isServiceRunning,
                     gpsViewModel,
-//                    receiver,
                     showSaveDialog
                 )
 
@@ -306,6 +301,64 @@ private fun ColumnTwoFab(
     }
 }
 
+@Composable
+fun ColumnFabSave(
+    trackItem: TrackItem,
+    viewModel: GpsScreenViewModel,
+    openSaveDialog: (Boolean) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .padding(4.dp)
+//            .background(Color.Cyan)
+    ) {
+
+        Text(
+            text = "Записати шлях?",
+            color = Purple40,
+            fontFamily = FontFamily(Font(R.font.ubuntu_bold)),
+            fontSize = 18.sp
+        )
+
+        Row(
+            modifier = Modifier
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    viewModel.insert(trackItem)
+                    openSaveDialog(false)
+                },
+                modifier = Modifier.padding(4.dp),
+                backgroundColor = Transparent100,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_save),
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                    tint = GreenPlay
+                )
+            }
+
+            FloatingActionButton(
+                onClick = {
+                    openSaveDialog(false)
+                },
+//                modifier = Modifier.padding(bottom = 4.dp),
+                backgroundColor = Transparent100,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_no_save),
+                    contentDescription = null,
+                    modifier = Modifier.size(30.dp),
+                    tint = Pink600
+                )
+            }
+        }
+    }
+}
+
 /** Service */
 private fun startStopService(
     context: Context,
@@ -314,7 +367,7 @@ private fun startStopService(
     showSaveDialog: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
-        startLockService(context, viewModel)
+        startLocationService(context, viewModel)
 
         // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
         viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
@@ -326,13 +379,14 @@ private fun startStopService(
     }
 }
 
-private fun startLockService(context: Context, viewModel: GpsScreenViewModel) {
+private fun startLocationService(context: Context, viewModel: GpsScreenViewModel) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         context.startForegroundService(viewModel.createIntentForService(context))
     } else {
         context.startService(viewModel.createIntentForService(context))
     }
 }
+
 /** End Service */
 
 @Composable
@@ -342,8 +396,10 @@ private fun MapViewContainer(
     viewModel: GpsScreenViewModel,
     mLocationOverlay: (MyLocationNewOverlay) -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var zoomMap by remember { mutableStateOf(17.0) }
 
+//    val pl by viewModel.geopointsList.collectAsState()
     val pl by viewModel.geopointsList.collectAsStateWithLifecycle()
     pl.outlinePaint?.color = getColor(context, R.color.purple_500)
     if (LocationService.isRunning) {
@@ -356,16 +412,25 @@ private fun MapViewContainer(
 
         // Provider
         val mLocProvider = GpsMyLocationProvider(context)
+
         // Создаем слой поверх карты для показа пути
         val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
         // Включаем следование за  местоположением
         mLocOverlay.enableFollowLocation()
+        // зум «щипком»
+        map.setMultiTouchControls(true)
+
 
         mLocOverlay.runOnFirstFix {
             map.overlays.clear() // очистили карту
             map.overlays.add(mLocOverlay) // Местоположение
+
+            /** Тут ERROR! при переходе на эту вкладку выдает ошибку
+             * java.lang.NullPointerException: Attempt to invoke virtual method 'org.osmdroid.util.BoundingBox
+             * org.osmdroid.views.overlay.LinearRing.getBoundingBox()' on a null object reference */
+//            Log.d(TAG, "mLocOverlay.runOnFirstFix mLocOverlay: ${mLocOverlay}")
             map.overlays.add(pl) // Линия
 
             // Передаем mLocationOverlay наверх
@@ -373,8 +438,8 @@ private fun MapViewContainer(
         }
 
         // Всегда показывать Zoom (+ -)
-    map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
-    zoomMap = map.zoomLevelDouble
+        map.zoomController.setVisibility((CustomZoomButtonsController.Visibility.ALWAYS))
+        zoomMap = map.zoomLevelDouble
     }
 }
 
