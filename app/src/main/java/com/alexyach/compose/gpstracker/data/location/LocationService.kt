@@ -13,7 +13,6 @@ import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.compose.ui.graphics.Color
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.datastore.core.DataStore
@@ -36,7 +35,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Polyline
 
 
 private const val PREFERENCES_LOCATION_NAME = "prefLocationName"

@@ -3,7 +3,6 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,10 +45,8 @@ import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Pink600
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
-import com.alexyach.compose.gpstracker.ui.theme.Purple40Tr
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
-import com.alexyach.compose.gpstracker.ui.theme.WhiteTr
 import com.alexyach.compose.gpstracker.utils.GeoPointsUtils
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import com.alexyach.compose.gpstracker.utils.rememberMapViewWithLifecycleUtil
@@ -241,7 +237,7 @@ private fun ColumnFabPlayStop(
             .padding(4.dp),
     ) {
 
-        // отображаем, толькл когда определится местоположение
+        // отображаем, толькo когда определится местоположение
         if (mLocOverlay != null) {
             FloatingActionButton(
                 onClick = {
@@ -314,7 +310,7 @@ fun ColumnFabSave(
     ) {
 
         Text(
-            text = "Записати шлях?",
+            text = stringResource(id = R.string.title_save_track_dialog),
             color = Purple40,
             fontFamily = FontFamily(Font(R.font.ubuntu_bold)),
             fontSize = 18.sp
@@ -333,7 +329,7 @@ fun ColumnFabSave(
                 elevation = FloatingActionButtonDefaults.elevation(0.dp)
             ) {
                 Icon(
-                    painterResource(id = R.drawable.ic_save),
+                    painterResource(id = R.drawable.ic_save_1),
                     contentDescription = null,
                     modifier = Modifier.size(30.dp),
                     tint = GreenPlay
@@ -396,7 +392,7 @@ private fun MapViewContainer(
     viewModel: GpsScreenViewModel,
     mLocationOverlay: (MyLocationNewOverlay) -> Unit
 ) {
-    val coroutineScope = rememberCoroutineScope()
+//    val coroutineScope = rememberCoroutineScope()
     var zoomMap by remember { mutableStateOf(17.0) }
 
 //    val pl by viewModel.geopointsList.collectAsState()

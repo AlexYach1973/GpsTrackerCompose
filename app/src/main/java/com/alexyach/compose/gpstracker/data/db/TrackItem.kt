@@ -18,6 +18,4 @@ data class TrackItem(
     val speed: String = "",
     @ColumnInfo(name = "geo_points")
     val geoPoints: String = "",
-//    @ColumnInfo(name = "geo_map")
-//    val geoMap: Bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
 )

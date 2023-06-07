@@ -168,7 +168,7 @@ fun GreetingPreview() {
                 speed = "2.1 km/h",
                 geoPoints = "",
             ),
-            { true },
+            {  },
             {}
         )
     }

@@ -29,7 +29,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -42,9 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.databinding.MapBinding
-import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Purple40
-import com.alexyach.compose.gpstracker.ui.theme.Purple40Tr
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey40
 import com.alexyach.compose.gpstracker.ui.theme.PurpleGrey80
 import com.alexyach.compose.gpstracker.ui.theme.Transparent100
@@ -107,7 +104,7 @@ private fun ResultScreen(
                 Box {
                     val listState = rememberLazyListState()
                     LazyColumn(
-                        modifier = Modifier.padding(bottom = 50.dp),
+                        modifier = Modifier,
                         state = listState
                     ) {
                         itemsIndexed(list) { index, item ->
@@ -118,7 +115,6 @@ private fun ResultScreen(
                             }, {
                                 viewModel.trackDetails = item
                                 isListOrDetails = false
-//                            Log.d(TAG, "GpsList Item: ${item.id}")
                             }
                             )
                         }
@@ -149,8 +145,8 @@ private fun ResultScreen(
                             Icon(
                                 painterResource(id = android.R.drawable.arrow_up_float),
                                 contentDescription = null,
-                                modifier = Modifier.size(30.dp),
-                                tint = PurpleGrey80
+                                tint = PurpleGrey80,
+                                modifier = Modifier.size(30.dp)
                             )
                         }
                     }
@@ -159,9 +155,8 @@ private fun ResultScreen(
         } else {
             TrackDetails(
                 context = context,
-                viewModel = viewModel,
-                { isListOrDetails = it }
-            )
+                viewModel = viewModel
+            ) { isListOrDetails = it }
         }
     }
 }
@@ -394,23 +389,21 @@ private fun MapViewContainer(
             return@AndroidView
         }
 
-        setMarker(context, map, pl.actualPoints)
+        setMarker(map, pl.actualPoints)
         map.controller.animateTo(pl.actualPoints[0]) // StartPosition
     }
 }
 
-private fun setMarker(context: Context, mapDetails: MapView, list: List<GeoPoint>) {
+private fun setMarker(mapDetails: MapView, list: List<GeoPoint>) {
 
     val startMarker = Marker(mapDetails)
     startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//    startMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     startMarker.position = list[0]
 
     mapDetails.overlays.add(startMarker)
 
     val stopMarker = Marker(mapDetails)
     stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//    stopMarker.icon = getDrawable(context, org.osmdroid.library.R.drawable.person)
     stopMarker.position = list.last()
     mapDetails.overlays.add(stopMarker)
 }

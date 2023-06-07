@@ -33,7 +33,7 @@
     <string name="dismiss_gps_permission_dialog">Без GPS працювати не буде</string>
 
     <!--    SaveTrackDialog-->
-    <string name="title_save_track_dialog">Бажаєте зберегти шлях ?</string>
+    <string name="title_save_track_dialog">Зберегти шлях?</string>
 
     <!--    Setting Screen-->
     <string name="update_time">Час оновлення</string>

@@ -12,7 +12,7 @@ import com.alexyach.compose.gpstracker.screens.gpssettings.GpsSettings
 @Composable
 fun NavGraph(
     navHostController: NavHostController,
-    modifier: Modifier =  Modifier
+    modifier: Modifier
 ) {
     NavHost(
         navController = navHostController,
@@ -30,7 +30,5 @@ fun NavGraph(
         composable(BottomItem.GpsSettings.route) {
             GpsSettings()
         }
-
     }
-
 }

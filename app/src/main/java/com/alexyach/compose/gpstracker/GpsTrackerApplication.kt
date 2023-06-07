@@ -17,7 +17,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
 class GpsTrackerApplication: Application() {
     lateinit var userPreferencesRepository: UserPreferencesRepository
 
-    val database by lazy { GpsDatabase.getDatabase(this) }
+//    val database by lazy { GpsDatabase.getDatabase(this) }
     val databaseDao by lazy { GpsDatabase.getDatabase(this).getGpsDao() }
 
     override fun onCreate() {

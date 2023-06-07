@@ -19,12 +19,11 @@ fun MainScreen(
             BottomNavigationScreen(navController = navController)
         }
     )
-    {
-        /** PaddingValues */
-
+    { innerPadding ->
         NavGraph(
             navHostController = navController,
-        modifier = modifier.padding(it))
+            modifier = modifier.padding(innerPadding)
+        )
     }
 }
 

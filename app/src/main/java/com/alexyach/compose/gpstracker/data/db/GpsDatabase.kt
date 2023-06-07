@@ -4,10 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 
 @Database(entities = [TrackItem::class], version = 1)
-@TypeConverters(ConverterBitmap::class)
 abstract class GpsDatabase : RoomDatabase() {
 
     abstract fun getGpsDao(): GpsDao
