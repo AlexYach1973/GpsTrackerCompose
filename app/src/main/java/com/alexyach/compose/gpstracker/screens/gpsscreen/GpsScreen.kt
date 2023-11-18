@@ -3,6 +3,7 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,10 +38,12 @@ import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.core.content.ContextCompat.getColor
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.alexyach.compose.gpstracker.MainActivity
 import com.alexyach.compose.gpstracker.R
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.databinding.MapBinding
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.ui.theme.GpsTrackerTheme
 import com.alexyach.compose.gpstracker.ui.theme.GreenPlay
 import com.alexyach.compose.gpstracker.ui.theme.Pink600
@@ -98,11 +101,15 @@ fun GpsScreen() {
 //                    .background(Color.Cyan)
             )
 
-            ColumnFabPlayStop(
-                gpsViewModel,
-                mLocationOverlay
-            ) {
-                showSaveTrack = it
+            // Отображаем, толькo когда определится местоположение
+            // И переходим на него
+            if (mLocationOverlay != null) {
+                ColumnFabPlayStop(
+                    gpsViewModel,
+                    mLocationOverlay
+                ) {
+                    showSaveTrack = it
+                }
             }
 
             /** Open Save Dialog */
@@ -225,7 +232,7 @@ private fun ColumnFabPlayStop(
     isServiceRunning = LocationService.isRunning
 
     // CenterLocation
-    var centerLocation by remember { mutableStateOf(false) }
+    var centerLocation by remember { mutableStateOf(true) }
     if (centerLocation) {
         CenterLocation(mLocOverlay)
         centerLocation = false
@@ -238,7 +245,7 @@ private fun ColumnFabPlayStop(
     ) {
 
         // отображаем, толькo когда определится местоположение
-        if (mLocOverlay != null) {
+//        if (mLocOverlay != null) {
             FloatingActionButton(
                 onClick = {
                     centerLocation = true
@@ -256,7 +263,7 @@ private fun ColumnFabPlayStop(
                 )
 
             }
-        }
+//        }
 
         FloatingActionButton(
             onClick = {
@@ -267,6 +274,7 @@ private fun ColumnFabPlayStop(
                     context,
                     isServiceRunning,
                     gpsViewModel,
+                    mLocOverlay,
                     showSaveDialog
                 )
 
@@ -360,6 +368,7 @@ private fun startStopService(
     context: Context,
     isServiceRunning: Boolean,
     viewModel: GpsScreenViewModel,
+    mLocOverlay: MyLocationNewOverlay?,
     showSaveDialog: (Boolean) -> Unit
 ) {
     if (isServiceRunning) {
@@ -368,10 +377,12 @@ private fun startStopService(
         // Записать начальное время в DataStore, чтоб HE обнулялся при выходе из App
         viewModel.saveStartTimeToDataStore(System.currentTimeMillis())
         viewModel.startTimer()
+//        viewModel.enableFollowMy(mLocOverlay)
     } else {
         context.stopService(Intent(context, LocationService::class.java))
         viewModel.stopTimer()
         showSaveDialog(true)
+//        viewModel.disableFollowMy(mLocOverlay)
     }
 }
 
@@ -392,6 +403,8 @@ private fun MapViewContainer(
     viewModel: GpsScreenViewModel,
     mLocationOverlay: (MyLocationNewOverlay) -> Unit
 ) {
+//    Log.d(TAG, "GpsScreen MapViewContainer")
+
 //    val coroutineScope = rememberCoroutineScope()
     var zoomMap by remember { mutableStateOf(17.0) }
 
@@ -411,10 +424,12 @@ private fun MapViewContainer(
 
         // Создаем слой поверх карты для показа пути
         val mLocOverlay = MyLocationNewOverlay(mLocProvider, map)
+
         // Включаем местоположения
         mLocOverlay.enableMyLocation()
         // Включаем следование за  местоположением
-        mLocOverlay.enableFollowLocation()
+//        mLocOverlay.enableFollowLocation()
+
         // зум «щипком»
         map.setMultiTouchControls(true)
 
@@ -448,7 +463,7 @@ private fun CenterLocation(mLocOverlay: MyLocationNewOverlay?) {
             mLocOverlay.enableFollowLocation()
         }
     }
-//    Log.d(TAG, "GsScreen CenterLocation, mLocOverlay: ${mLocOverlay?.myLocation}")
+    Log.d(TAG, "GsScreen CenterLocation, mLocOverlay: ${mLocOverlay?.myLocation}")
 }
 
 /** END Работа с картой  */

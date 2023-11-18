@@ -2,6 +2,7 @@ package com.alexyach.compose.gpstracker.screens.gpsscreen
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -13,11 +14,13 @@ import com.alexyach.compose.gpstracker.data.db.GpsDao
 import com.alexyach.compose.gpstracker.data.db.TrackItem
 import com.alexyach.compose.gpstracker.data.location.LocationService
 import com.alexyach.compose.gpstracker.data.preferences.UserPreferencesRepository
+import com.alexyach.compose.gpstracker.screens.gpssettings.TAG
 import com.alexyach.compose.gpstracker.utils.TimeUtilFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import java.util.Timer
 import java.util.TimerTask
 
@@ -84,6 +87,18 @@ class GpsScreenViewModel(
             locationUpdate.value!!.distance / ((stopTime - startTime) / 1000.0f)
         }
     }
+/*
+    fun enableFollowMy(mLocOverlay: MyLocationNewOverlay?) {
+//        mLocOverlay?.enableMyLocation()
+        mLocOverlay?.enableFollowLocation()
+        Log.d(TAG, "Screen ViewModel- enableFollowMy")
+    }
+
+    fun disableFollowMy(mLocOverlay: MyLocationNewOverlay?) {
+//        mLocOverlay?.disableMyLocation()
+        mLocOverlay?.disableFollowLocation()
+        Log.d(TAG, "Screen ViewModel- disableFollowMy")
+    }*/
 
     /** Polyline */
     fun updatePolyline() {
